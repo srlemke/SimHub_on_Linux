@@ -23,14 +23,14 @@
 
 ## How to Install:
 ```bash
-wget https://github.com/srlemke/SimHub_on_Linux/blob/main/Install_Simhub_Linux.sh
+wget https://raw.githubusercontent.com/srlemke/SimHub_on_Linux/refs/heads/main/Install_Simhub_Linux.sh
 chmod +x Install_Simhub_Linux.sh
 ./Install_Simhub_Linux.sh
 ```
 
 ## How to run:
 ```bash
-wget https://github.com/srlemke/SimHub_on_Linux/blob/main/runsimhub2.sh
+wget https://raw.githubusercontent.com/srlemke/SimHub_on_Linux/refs/heads/main/runsimhub2.sh
 chmod +x runsimhub2.sh
 ./runsimhub2.sh
 ```
