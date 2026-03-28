@@ -170,7 +170,7 @@ if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
         echo "dotnet48 installation completed successfully!"
         echo "Installation took ${minutes}m ${seconds}s"
     else
-        echo "dotnet48 installation failed!"
+        echo "dotnet48 installation failed! Not uncommon, run this script again"
     fi
 else
     echo "WARNING: dotnet48 is required for SimHub to work properly!"
