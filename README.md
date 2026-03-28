@@ -34,3 +34,7 @@ chmod +x runsimhub2.sh
 ./runsimhub2.sh
 ```
 - You probably can add this command to a menu laucher with icon.
+
+## Running:
+![Select Steam Game](running.png)
+
