@@ -1,2 +1,26 @@
-# SimHub-on-Linux
-Linux Installer for SimHub
+A bash script to install SimHub and dotnet48 for Steam games running under Proton/Wine.
+
+![Select Steam Game](screenshot.png)
+
+## Requirements, those are automatically checked:
+
+- `protontricks`
+- `winetricks`
+- `wget` or `curl`
+- `unzip`
+
+## Features:
+
+- `Scans installed Steam games`
+- `Checks if game has been run before to confirm a populated game vessel exists`
+- `Installs dotnet48 (user has to confirm)`
+- `Downloads and installs SimHub 9.11.5`
+- `Gives instructions on what SimHub components to install`
+- `Sets Windows version to Windows 11 for better SimHub compatibility`
+- `Provides installation time tracking for dotnet48`
+
+## How to Run (never as root):
+```bash
+wget https://github.com/srlemke/SimHub-on-Linux/blob/main/Install_Simhub_Linux_Version35.sh
+chmod +x Install_Simhub_Linux_Version35.sh
+./Install_Simhub_Linux_Version35.sh
