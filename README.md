@@ -22,9 +22,9 @@ You never have to run any of this as root. Do not run as root, this is Linux :)
 
 ## How to Install:
 ```bash
-wget https://github.com/srlemke/SimHub_on_Linux/blob/main/Install_Simhub_Linux_Version35.sh
-chmod +x Install_Simhub_Linux_Version35.sh
-./Install_Simhub_Linux_Version35.sh
+wget https://github.com/srlemke/SimHub_on_Linux/blob/main/Install_Simhub_Linux_Version.sh
+chmod +x Install_Simhub_Linux_Version.sh
+./Install_Simhub_Linux_Version.sh
 ```
 
 ## How to run:
