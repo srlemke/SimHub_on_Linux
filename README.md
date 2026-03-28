@@ -21,6 +21,6 @@ A bash script to install SimHub and dotnet48 for Steam games running under Proto
 
 ## How to Run (never as root):
 ```bash
-wget https://github.com/srlemke/SimHub-on-Linux/blob/main/Install_Simhub_Linux_Version35.sh
+wget https://github.com/srlemke/SimHub_on_Linux/blob/main/Install_Simhub_Linux_Version35.sh
 chmod +x Install_Simhub_Linux_Version35.sh
 ./Install_Simhub_Linux_Version35.sh
