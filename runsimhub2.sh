@@ -75,8 +75,7 @@ if [ "$game" = "211500" ]; then
     echo "Running Dash..."
     protontricks-launch --appid "$game" "$DASH_EXE" 2>&1 | grep -v -i 'fixme\|W:'
 else
-    echo "Game is not RaceRoom Racing Experience (211500)."
-    echo "Only SimHub has been launched."
+    echo "SimHub has been launched."
 fi
 
 echo ""
