@@ -77,16 +77,7 @@ if [[ "$game" = "2399420" ]]; then
         exit 1
     fi
 
-    # Validate SimHub
-    if [[ ! -f "$SIMHUB_EXE" ]]; then
-        echo "Error: SimHubWPF.exe not found for LMU."
-        echo "Expected:"
-        echo "  $SIMHUB_EXE"
-        read -p "Press ENTER to exit..."
-        exit 1
-    fi
-
-    LMU_PLUGIN_DIR="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins"
+	LMU_PLUGIN_DIR="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins"
     mkdir -p "$LMU_PLUGIN_DIR"
 
     LMU_PLUGIN1="$LMU_PLUGIN_DIR/rFactor2SharedMemoryMapPlugin64.dll"
@@ -112,27 +103,20 @@ if [[ "$game" = "2399420" ]]; then
         NEED_FIX=1
     fi
 
-    # Check JSON correctness
 # Check JSON correctness
-    if [[ ! -f "$LMU_JSON" ]]; then
+if [[ ! -f "$LMU_JSON" ]]; then
     NEED_FIX=1
-    else
-    # Plugin blocks must exist
-    if ! grep -q '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON"; then
-        NEED_FIX=1
-	
-    fi
-    if ! grep -q '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON"; then
+else
+    # LMU plugin must have Enabled = 1
+    if ! grep -A15 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
         NEED_FIX=1
     fi
 
-    if ! grep -A10 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
-    NEED_FIX=1
+    # rFactor2 plugin must have Enabled = 1
+    if ! grep -A15 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+        NEED_FIX=1
     fi
-
-    if ! grep -A10 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
-    NEED_FIX=1
-    fi
+  fi
 fi
 
     #########################################################
