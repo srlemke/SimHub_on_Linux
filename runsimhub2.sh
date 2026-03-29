@@ -3,7 +3,7 @@
 # Check if SimHub is already running
 if pgrep -f "SimHubWPF.exe" >/dev/null; then
     echo ""
-    echo "⚠  SimHub is already running."
+    echo "⚠️  SimHub is already running."
     echo "Starting another instance may cause issues."
     echo ""
     read -p "Press ENTER to exit..."
@@ -15,9 +15,9 @@ game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -v grep \
        | sed -n 's/.*AppId=\([0-9]\+\).*/\1/p' | head -1)
 
 if [[ -z "$game" ]]; then
+    echo ""
     echo "Game variable is empty, no game running."
-    echo "You should not run this script before running the game,"
-    echo "otherwise it will lock the gameprefix and Steam won't be able to start the game."
+    echo "Start the game and run this again."
     echo ""
     read -p "Press ENTER to exit..."
     exit 1
@@ -49,82 +49,9 @@ fi
 
 # Special handling for Le Mans Ultimate (2399420) as this is a custom proton.
 if [[ "$game" = "2399420" ]]; then
-    echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Wine..."
-    echo ""
+    echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Proton..."
 
-# Check LMU Shared Memory Plugin (LMU_SharedMemoryMapPlugin64.dll)
-LMU_PLUGIN2="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins/LMU_SharedMemoryMapPlugin64.dll"
-
-if [[ ! -f "$LMU_PLUGIN2" ]]; then
-    echo "⚠  LMU Shared Memory Plugin missing!"
-    echo "We will Download it from: https://github.com/tembob64/LMU_SharedMemoryMapPlugin/releases"
-    read -p "Press ENTER to continue..."
-    echo "Attempting to download and install LMU_SharedMemoryMapPlugin64.dll..."
-    echo ""
-
-    TMP_DIR="$HOME/.cache/lmu_plugin"
-    mkdir -p "$TMP_DIR"
-
-    ZIP_URL="https://github.com/tembob64/LMU_SharedMemoryMapPlugin/releases/download/LMU_SharedMemory_Plugin_v4.0.16.7/LMU_SharedMemoryMapPlugin64.zip"
-    ZIP_FILE="$TMP_DIR/LMU_SharedMemoryMapPlugin64.zip"
-
-    # Download plugin
-    if command -v wget >/dev/null; then
-        wget -q "$ZIP_URL" -O "$ZIP_FILE"
-    elif command -v curl >/dev/null; then
-        curl -sL -o "$ZIP_FILE" "$ZIP_URL"
-    else
-        echo "Error: wget or curl not found! Cannot download plugin."
-        read -p "Press ENTER to continue..."
-    fi
-
-    # Extract plugin
-    if [[ -f "$ZIP_FILE" ]]; then
-        if command -v unzip >/dev/null; then
-            unzip -q "$ZIP_FILE" -d "$TMP_DIR"
-        else
-            echo "Error: unzip not found! Cannot extract plugin."
-            read -p "Press ENTER to continue..."
-        fi
-    fi
-
-    # Move plugin into LMU Plugins folder
-    if [[ -f "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" ]]; then
-        mv "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" "$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins/"
-        echo "✔ LMU Shared Memory Plugin installed successfully."
-        echo "✔ You need to restart the game so it detects the new plugin."
-            read -p "Press ENTER to continue..."
-    else
-        echo "❌ Failed to extract LMU_SharedMemoryMapPlugin64.dll!"
-        echo "SimHub may not receive full telemetry."
-        read -p "Press ENTER to continue..."
-    fi
-
-    rm -f "$ZIP_FILE"
-fi
-
-# Check LMU telemetry plugin (rFactor2SharedMemoryMapPlugin64.dll)
-LMU_PLUGIN1="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins/rFactor2SharedMemoryMapPlugin64.dll"
-SIMHUB_PLUGIN1="$HOME/.steam/steam/steamapps/compatdata/2399420/pfx/drive_c/Program Files (x86)/SimHub/_Addons/GamePlugins/RFactor2/Bin64/Plugins/rFactor2SharedMemoryMapPlugin64.dll"
-
-if [[ ! -f "$LMU_PLUGIN1" ]]; then
-    echo ""
-    echo "rFactor2SharedMemoryMapPlugin64.dll missing in LMU Plugins folder."
-    echo "Attempting to copy from SimHub installation..."
-
-    if [[ -f "$SIMHUB_PLUGIN1" ]]; then
-        cp "$SIMHUB_PLUGIN1" "$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins/"
-        echo "✔ Plugin installed successfully."
-        echo "✔ You need to restart the game so it detects the new plugin."
-            read -p "Press ENTER to continue..."
-    else
-        echo "❌ Plugin not found in SimHub installation:"
-        echo "  $SIMHUB_PLUGIN1"
-        echo "SimHub telemetry may not work."
-    fi
-fi
-
-# Auto-detect LMU Proton build
+    # Auto-detect LMU Proton build
     CUSTOM_WINE_DIR=$(find "$HOME/.steam/steam/compatibilitytools.d" \
         -maxdepth 1 \
         -type d \
@@ -158,14 +85,184 @@ fi
         exit 1
     fi
 
-    # Launch SimHub using LMU's Wine
-    echo "Launching SimHub with LMU Wine..."
-    WINEPREFIX="$WINEPREFIX" "$CUSTOM_WINE" "$SIMHUB_EXE" >/dev/null 2>&1 &
+    LMU_PLUGIN_DIR="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins"
+    mkdir -p "$LMU_PLUGIN_DIR"
 
-    echo ""
-    echo "SimHub launched for LMU."
-    echo "Done!"
-    exit 0
+    LMU_PLUGIN1="$LMU_PLUGIN_DIR/rFactor2SharedMemoryMapPlugin64.dll"
+    SIMHUB_PLUGIN1="$WINEPREFIX/drive_c/Program Files (x86)/SimHub/_Addons/GamePlugins/RFactor2/Bin64/Plugins/rFactor2SharedMemoryMapPlugin64.dll"
+
+    LMU_PLUGIN2="$LMU_PLUGIN_DIR/LMU_SharedMemoryMapPlugin64.dll"
+
+    LMU_JSON="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/UserData/player/CustomPluginVariables.JSON"
+
+    ###############################################
+    # Determine if LMU needs plugin or JSON fixes #
+    ###############################################
+
+    NEED_FIX=0
+
+    # Check plugin 1
+    if [[ ! -f "$LMU_PLUGIN1" ]]; then
+        NEED_FIX=1
+    fi
+
+    # Check plugin 2
+    if [[ ! -f "$LMU_PLUGIN2" ]]; then
+        NEED_FIX=1
+    fi
+
+    # Check JSON correctness
+# Check JSON correctness
+    if [[ ! -f "$LMU_JSON" ]]; then
+    NEED_FIX=1
+    else
+    # Plugin blocks must exist
+    if ! grep -q '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON"; then
+        NEED_FIX=1
+	
+    fi
+    if ! grep -q '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON"; then
+        NEED_FIX=1
+    fi
+
+    if ! grep -A10 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+    NEED_FIX=1
+    fi
+
+    if ! grep -A10 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+    NEED_FIX=1
+    fi
+fi
+
+    #########################################################
+    # If fixes are needed AND LMU is running → ask to close #
+    #########################################################
+    
+if [[ "$NEED_FIX" -eq 1 ]]; then
+    while true; do
+        current_game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -v grep \
+                       | sed -n 's/.*AppId=\([0-9]\+\).*/\1/p' | head -1)
+
+        if [[ "$current_game" != "2399420" ]]; then
+            break
+        fi
+
+        echo ""
+        echo "⚠  You have missing telemetry plugins."
+        echo "LMU must be closed before we can add the missing plugins."
+        echo "This is only only needed on the first run. You can run the game normally afterwards."
+        echo ""
+        read -p "Close LMU and press ENTER to check again..."
+    done
+fi
+
+    ###############################################
+    # Apply fixes if needed                       #
+    ###############################################
+
+    FIXES_APPLIED=0
+
+    if [[ "$NEED_FIX" -eq 1 ]]; then
+        FIXES_APPLIED=1
+
+        echo ""
+        echo "Applying LMU plugin and JSON fixes..."
+        echo ""
+
+        # Install plugin 1
+        if [[ ! -f "$LMU_PLUGIN1" ]]; then
+            echo "Installing rFactor2SharedMemoryMapPlugin64.dll..."
+            if [[ -f "$SIMHUB_PLUGIN1" ]]; then
+                cp "$SIMHUB_PLUGIN1" "$LMU_PLUGIN_DIR/"
+                echo "✔ Installed rFactor2SharedMemoryMapPlugin64.dll"
+            else
+                echo "❌ Missing plugin in SimHub installation:"
+                echo "  $SIMHUB_PLUGIN1"
+            fi
+        fi
+
+        # Install plugin 2
+        if [[ ! -f "$LMU_PLUGIN2" ]]; then
+            echo "Installing LMU_SharedMemoryMapPlugin64.dll..."
+
+            TMP_DIR="$HOME/.cache/lmu_plugin"
+            mkdir -p "$TMP_DIR"
+
+            ZIP_URL="https://github.com/tembob64/LMU_SharedMemoryMapPlugin/releases/download/LMU_SharedMemory_Plugin_v4.0.16.7/LMU_SharedMemoryMapPlugin64.zip"
+            ZIP_FILE="$TMP_DIR/LMU_SharedMemoryMapPlugin64.zip"
+
+            if command -v wget >/dev/null; then
+                wget -q "$ZIP_URL" -O "$ZIP_FILE"
+            elif command -v curl >/dev/null; then
+                curl -sL -o "$ZIP_FILE" "$ZIP_URL"
+            fi
+
+            if [[ -f "$ZIP_FILE" ]]; then
+                unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+            fi
+
+            if [[ -f "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" ]]; then
+                mv "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" "$LMU_PLUGIN_DIR/"
+                echo "✔ Installed LMU_SharedMemoryMapPlugin64.dll"
+            else
+                echo "❌ Failed to extract LMU_SharedMemoryMapPlugin64.dll"
+            fi
+
+            rm -f "$ZIP_FILE"
+        fi
+
+        # Write JSON
+        REQUIRED_JSON='{
+  "LMU_SharedMemoryMapPlugin64.dll": {
+    " Enabled": 1,
+    "DebugISIInternals": 0,
+    "DebugOutputLevel": 0,
+    "DebugOutputSource": 1,
+    "DedicatedServerMapGlobally": 0,
+    "EnableDirectMemoryAccess": 0,
+    "EnableHWControlInput": 1,
+    "EnableRulesControlInput": 0,
+    "EnableWeatherControlInput": 0,
+    "UnsubscribedBuffersMask": 160
+  },
+  "rFactor2SharedMemoryMapPlugin64.dll": {
+    " Enabled": 1,
+    "DebugISIInternals": 0,
+    "DebugOutputLevel": 0,
+    "DebugOutputSource": 1,
+    "DedicatedServerMapGlobally": 0,
+    "EnableDirectMemoryAccess": 0,
+    "EnableHWControlInput": 1,
+    "EnableRulesControlInput": 0,
+    "EnableWeatherControlInput": 0,
+    "UnsubscribedBuffersMask": 160
+  }
+}'
+
+        mkdir -p "$(dirname "$LMU_JSON")"
+        echo "$REQUIRED_JSON" > "$LMU_JSON"
+        echo "✔ CustomPluginVariables.JSON updated."
+    fi
+
+    ###############################################
+    # Decide whether to launch SimHub             #
+    ###############################################
+
+    if [[ "$FIXES_APPLIED" -eq 1 ]]; then
+        echo ""
+        echo "✔ Fixes applied successfully."
+        echo "You can now start Le Mans Ultimate again and once it started run this script, all should be good."
+        echo ""
+        exit 0
+    else
+        echo ""
+        echo "Launching SimHub with LMU Wine..."
+        WINEPREFIX="$WINEPREFIX" "$CUSTOM_WINE" "$SIMHUB_EXE" >/dev/null 2>&1 &
+        echo ""
+        echo "SimHub launched for LMU."
+        echo "Done!"
+        exit 0
+    fi
 fi
 
 # Launch SimHub
@@ -228,3 +325,4 @@ fi
 
 echo ""
 echo "Done!"
+
