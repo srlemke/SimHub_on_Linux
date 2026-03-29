@@ -117,7 +117,6 @@ else
 	    NEED_FIX=1
     fi
 fi
-fi
 
     #########################################################
     # If fixes are needed AND LMU is running → ask to close #
