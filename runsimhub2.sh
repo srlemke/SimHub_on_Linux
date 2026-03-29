@@ -40,6 +40,7 @@ SIMHUB_EXE="$HOME/.steam/steam/steamapps/compatdata/$game/pfx/drive_c/Program Fi
 
 if [[ ! -f "$SIMHUB_EXE" ]]; then
     echo "SimHub is not installed for this game."
+    echo "You need to run the install script again while this game is open."
     echo "Expected file:"
     echo "  $SIMHUB_EXE"
     echo ""
