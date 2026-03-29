@@ -15,11 +15,12 @@
 
 - `Scans installed Steam games`
 - `Checks if game has been run before to confirm a populated game vessel exists`
-- `Installs dotnet48 (user has to confirm)`
+- `Installs dotnet48 with a time track (user has to confirm)`
 - `Downloads and installs SimHub 9.11.5`
 - `Gives instructions on what SimHub components to install`
 - `Sets Windows version to Windows 11 for better SimHub compatibility`
-- `Provides installation time tracking for dotnet48`
+- `Detects LMU custom Proton`
+- `Automatically configures LMU`
 
 ## How to Install:
 ```bash
