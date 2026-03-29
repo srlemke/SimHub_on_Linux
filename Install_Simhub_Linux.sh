@@ -1,289 +1,312 @@
-#!/bin/sh
+#!/bin/bash
 
-# Check for required tools
-echo "Checking for required tools..."
-missing_tools=0
-
-if ! which protontricks > /dev/null 2>&1; then
-    echo "WARNING: protontricks is not installed"
-    missing_tools=1
+# Check if SimHub is already running
+if pgrep -f "SimHubWPF.exe" >/dev/null; then
+	echo ""
+	echo "⚠️  SimHub is already running."
+	echo "Starting another instance may cause issues."
+	echo ""
+	read -p "Press ENTER to exit..."
+	exit 1
 fi
 
-if ! which winetricks > /dev/null 2>&1; then
-    echo "WARNING: winetricks is not installed"
-    missing_tools=1
+# Get the running game's AppId
+game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -v grep \
+	| sed -n 's/.*AppId=\([0-9]\+\).*/\1/p' | head -1)
+
+if [[ -z "$game" ]]; then
+	echo ""
+	echo "Game variable is empty, no game running."
+	echo "Start the game and run this again."
+	echo ""
+	read -p "Press ENTER to exit..."
+	exit 1
 fi
 
-if ! which wget > /dev/null 2>&1 && ! which curl > /dev/null 2>&1; then
-    echo "WARNING: wget or curl is not installed (needed for downloads)"
-    missing_tools=1
-fi
+# Try to read the game name from Steam's appmanifest file
+APP_MANIFEST="$HOME/.steam/steam/steamapps/appmanifest_${game}.acf"
 
-if [ $missing_tools -eq 1 ]; then
-    echo ""
-    printf "Continue anyway? (y/n): "
-    read -r reply
-    echo
-    if [ "$reply" != "y" ] && [ "$reply" != "Y" ]; then
-        exit 1
-    fi
-fi
-
-echo ""
-
-# Steam directory
-STEAM_DIR="$HOME/.steam/steam/steamapps"
-
-# Parse manifest files and extract game info
-echo "Scanning for installed games..."
-index=0
-
-for manifest in "$STEAM_DIR"/appmanifest_*.acf; do
-    if [ -f "$manifest" ]; then
-        # Extract app ID from filename (appmanifest_XXXXX.acf)
-        app_id=$(basename "$manifest" | sed 's/appmanifest_//;s/.acf//')
-        
-        # Extract game name from manifest file
-        game_name=$(grep -m1 '"name"' "$manifest" | awk -F'"' '{print $4}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        
-        # Filter out entries containing Steam or Proton
-        if echo "$game_name" | grep -qi "Steam\|Proton"; then
-            continue
-        fi
-        
-        if [ -n "$game_name" ]; then
-            # Store in temporary file instead of arrays (more portable)
-            echo "$app_id|$game_name" >> /tmp/steam_games_$$
-            index=$((index + 1))
-        fi
-    fi
-done
-
-# Check if any games were found
-if [ $index -eq 0 ]; then
-    echo "No games found in Steam directory."
-    echo ""
-    echo "NOTE: If your game is not listed, you need to run it at least once"
-    echo "and close it. This creates the necessary Proton/Wine prefix files."
-    echo ""
-    rm -f /tmp/steam_games_$$
-    exit 1
-fi
-
-# Display menu
-echo ""
-echo "=== Available Games ==="
-awk -F'|' '{print NR-1 "] " $1 " - " $2}' /tmp/steam_games_$$
-
-echo ""
-echo "NOTE: If your game is not listed, you need to run it at least once"
-echo "and close it. This creates the necessary Proton/Wine prefix files."
-echo ""
-
-# Get user selection
-printf "Select a game (0-$((index - 1))): "
-read -r selection
-echo
-
-# Validate selection
-if ! [ "$selection" -ge 0 ] 2>/dev/null || [ "$selection" -ge "$index" ]; then
-    echo "Invalid selection."
-    rm -f /tmp/steam_games_$$
-    exit 1
-fi
-
-# Display selected game
-selected_line=$(sed -n "$((selection + 1))p" /tmp/steam_games_$$)
-selected_id=$(echo "$selected_line" | awk -F'|' '{print $1}')
-selected_name=$(echo "$selected_line" | awk -F'|' '{print $2}')
-
-echo ""
-echo "You selected:"
-echo "ID: $selected_id"
-echo "Name: $selected_name"
-echo ""
-
-# Check if game is running
-echo "Checking if game is running..."
-if pgrep -f "$selected_id" > /dev/null 2>&1; then
-    echo ""
-    echo "ERROR: The game is currently running!"
-    echo "Please close the game before installing SimHub or dotnet48."
-    echo ""
-    printf "Press Enter to exit..."
-    read -r dummy
-    rm -f /tmp/steam_games_$$
-    exit 1
-fi
-
-echo "Game is not running. Continuing..."
-echo ""
-
-# Check if game has been run at least once (Proton prefix exists)
-echo "Checking if game has been run before..."
-PROTON_PREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
-if [ ! -d "$PROTON_PREFIX" ]; then
-    echo ""
-    echo "ERROR: Game has never been run before!"
-    echo "Please run the game at least once and close it."
-    echo "This creates the necessary Proton/Wine prefix files."
-    echo ""
-    printf "Press Enter to exit..."
-    read -r dummy
-    rm -f /tmp/steam_games_$$
-    exit 1
-fi
-
-echo "Game prefix found. Continuing..."
-echo ""
-
-# Ask if user wants to install dotnet48
-printf "Install dotnet48 for $selected_name? (y/n): "
-read -r install_dotnet
-echo
-
-if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
-    echo "Installing dotnet48..."
-    echo "This may take 5 minutes or more depending on your hardware."
-    echo "Please be patient and do not interrupt the process."
-    echo ""
-    echo "NOTE: A popup may appear saying 'Failed to start rundll32.exe'."
-    echo "This is normal and can be safely ignored. Those errors are not uncommon and you can always ignore."
-    echo "Click 'No' if prompted and let the installation continue."
-    echo ""
-    echo "Please wait..."
-    echo ""
-    
-    # Record start time
-    start_time=$(date +%s)
-    
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" winetricks -q --force dotnet48 > /dev/null 2>&1
-    install_result=$?
-    
-    # Record end time and calculate duration
-    end_time=$(date +%s)
-    duration=$((end_time - start_time))
-    minutes=$((duration / 60))
-    seconds=$((duration % 60))
-    
-    if [ $install_result -eq 0 ]; then
-        echo "dotnet48 installation completed successfully!"
-        echo "Installation took ${minutes}m ${seconds}s"
-    else
-        echo "dotnet48 installation failed! Not uncommon, run this script again"
-    fi
+if [[ -f "$APP_MANIFEST" ]]; then
+	game_name=$(grep -m1 '"name"' "$APP_MANIFEST" | sed 's/.*"name"[[:space:]]*"\(.*\)".*/\1/')
 else
-    echo "WARNING: dotnet48 is required for SimHub to work properly!"
-    echo "SimHub may not function correctly without it."
-    printf "Press Enter to exit..."
-    read -r dummy
-    rm -f /tmp/steam_games_$$
-    exit 1
+	game_name="Unknown Game"
+fi
+
+echo "Detected game: $game ($game_name)"
+echo ""
+
+# Check if SimHub install exists
+SIMHUB_EXE="$HOME/.steam/steam/steamapps/compatdata/$game/pfx/drive_c/Program Files (x86)/SimHub/SimHubWPF.exe"
+
+if [[ ! -f "$SIMHUB_EXE" ]]; then
+	echo "SimHub is not installed for this game."
+	echo "You need to run the install script again while this game is open."
+	echo "Expected file:"
+	echo "  $SIMHUB_EXE"
+	echo ""
+	read -p "Press ENTER to exit..."
+	exit 1
+fi
+
+# Special handling for Le Mans Ultimate (2399420) as this is a custom proton.
+if [[ "$game" = "2399420" ]]; then
+	echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Proton..."
+
+    # Auto-detect LMU Proton build
+    CUSTOM_WINE_DIR=$(find "$HOME/.steam/steam/compatibilitytools.d" \
+	    -maxdepth 1 \
+	    -type d \
+	    -name "GE-Proton*-lmu*" \
+	    | head -1)
+
+    if [[ -z "$CUSTOM_WINE_DIR" ]]; then
+	    echo "Error: No LMU-specific GE-Proton build found in compatibilitytools.d"
+	    read -p "Press ENTER to exit..."
+	    exit 1
+    fi
+
+    CUSTOM_WINE="$CUSTOM_WINE_DIR/files/bin/wine"
+    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$game/pfx"
+    SIMHUB_EXE="$WINEPREFIX/drive_c/Program Files (x86)/SimHub/SimHubWPF.exe"
+
+    # Validate Wine binary
+    if [[ ! -x "$CUSTOM_WINE" ]]; then
+	    echo "Error: Wine binary not found or not executable:"
+	    echo "  $CUSTOM_WINE"
+	    read -p "Press ENTER to exit..."
+	    exit 1
+    fi
+
+    LMU_PLUGIN_DIR="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins"
+    mkdir -p "$LMU_PLUGIN_DIR"
+
+    LMU_PLUGIN1="$LMU_PLUGIN_DIR/rFactor2SharedMemoryMapPlugin64.dll"
+    SIMHUB_PLUGIN1="$WINEPREFIX/drive_c/Program Files (x86)/SimHub/_Addons/GamePlugins/RFactor2/Bin64/Plugins/rFactor2SharedMemoryMapPlugin64.dll"
+
+    LMU_PLUGIN2="$LMU_PLUGIN_DIR/LMU_SharedMemoryMapPlugin64.dll"
+
+    LMU_JSON="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/UserData/player/CustomPluginVariables.JSON"
+
+    ###############################################
+    # Determine if LMU needs plugin or JSON fixes #
+    ###############################################
+
+    NEED_FIX=0
+
+    # Check plugin 1
+    if [[ ! -f "$LMU_PLUGIN1" ]]; then
+	    NEED_FIX=1
+    fi
+
+    # Check plugin 2
+    if [[ ! -f "$LMU_PLUGIN2" ]]; then
+	    NEED_FIX=1
+    fi
+
+# Check JSON correctness
+if [[ ! -f "$LMU_JSON" ]]; then
+	NEED_FIX=1
+else
+	# LMU plugin must have Enabled = 1
+	if ! grep -A15 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+		NEED_FIX=1
+	fi
+
+    # rFactor2 plugin must have Enabled = 1
+    if ! grep -A15 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+	    NEED_FIX=1
+    fi
+fi
+
+    #########################################################
+    # If fixes are needed AND LMU is running → ask to close #
+    #########################################################
+
+    if [[ "$NEED_FIX" -eq 1 ]]; then
+	    while true; do
+		    current_game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -v grep \
+			    | sed -n 's/.*AppId=\([0-9]\+\).*/\1/p' | head -1)
+
+		    if [[ "$current_game" != "2399420" ]]; then
+			    break
+		    fi
+
+		    echo ""
+		    echo "⚠  You have missing telemetry plugins."
+		    echo "LMU must be closed before we can add the missing plugins."
+		    echo "This is only only needed on the first run. You can run the game normally afterwards."
+		    echo ""
+		    read -p "Close LMU and press ENTER to check again..."
+	    done
+    fi
+
+    ###############################################
+    # Apply fixes if needed                       #
+    ###############################################
+
+    FIXES_APPLIED=0
+
+    if [[ "$NEED_FIX" -eq 1 ]]; then
+	    FIXES_APPLIED=1
+
+	    echo ""
+	    echo "Applying LMU plugin and JSON fixes..."
+	    echo ""
+
+	# Install plugin 1
+	if [[ ! -f "$LMU_PLUGIN1" ]]; then
+		echo "Installing rFactor2SharedMemoryMapPlugin64.dll..."
+		if [[ -f "$SIMHUB_PLUGIN1" ]]; then
+			cp "$SIMHUB_PLUGIN1" "$LMU_PLUGIN_DIR/"
+			echo "✔ Installed rFactor2SharedMemoryMapPlugin64.dll"
+		else
+			echo "❌ Missing plugin in SimHub installation:"
+			echo "  $SIMHUB_PLUGIN1"
+		fi
+	fi
+
+	# Install plugin 2
+	if [[ ! -f "$LMU_PLUGIN2" ]]; then
+		echo "Installing LMU_SharedMemoryMapPlugin64.dll..."
+
+		TMP_DIR="$HOME/.cache/lmu_plugin"
+		mkdir -p "$TMP_DIR"
+
+		ZIP_URL="https://github.com/tembob64/LMU_SharedMemoryMapPlugin/releases/download/LMU_SharedMemory_Plugin_v4.0.16.7/LMU_SharedMemoryMapPlugin64.zip"
+		ZIP_FILE="$TMP_DIR/LMU_SharedMemoryMapPlugin64.zip"
+
+		if command -v wget >/dev/null; then
+			wget -q "$ZIP_URL" -O "$ZIP_FILE"
+		elif command -v curl >/dev/null; then
+			curl -sL -o "$ZIP_FILE" "$ZIP_URL"
+		fi
+
+		if [[ -f "$ZIP_FILE" ]]; then
+			unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+		fi
+
+		if [[ -f "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" ]]; then
+			mv "$TMP_DIR/LMU_SharedMemoryMapPlugin64.dll" "$LMU_PLUGIN_DIR/"
+			echo "✔ Installed LMU_SharedMemoryMapPlugin64.dll"
+		else
+			echo "❌ Failed to extract LMU_SharedMemoryMapPlugin64.dll"
+		fi
+
+		rm -f "$ZIP_FILE"
+	fi
+
+	# Write JSON
+	REQUIRED_JSON='{
+	"LMU_SharedMemoryMapPlugin64.dll": {
+		" Enabled": 1,
+		"DebugISIInternals": 0,
+		"DebugOutputLevel": 0,
+		"DebugOutputSource": 1,
+		"DedicatedServerMapGlobally": 0,
+		"EnableDirectMemoryAccess": 0,
+		"EnableHWControlInput": 1,
+		"EnableRulesControlInput": 0,
+		"EnableWeatherControlInput": 0,
+		"UnsubscribedBuffersMask": 160
+	},
+	"rFactor2SharedMemoryMapPlugin64.dll": {
+		" Enabled": 1,
+		"DebugISIInternals": 0,
+		"DebugOutputLevel": 0,
+		"DebugOutputSource": 1,
+		"DedicatedServerMapGlobally": 0,
+		"EnableDirectMemoryAccess": 0,
+		"EnableHWControlInput": 1,
+		"EnableRulesControlInput": 0,
+		"EnableWeatherControlInput": 0,
+		"UnsubscribedBuffersMask": 160
+	}
+}'
+
+mkdir -p "$(dirname "$LMU_JSON")"
+echo "$REQUIRED_JSON" > "$LMU_JSON"
+echo "✔ CustomPluginVariables.JSON updated."
+    fi
+
+    ###############################################
+    # Decide whether to launch SimHub             #
+    ###############################################
+
+    if [[ "$FIXES_APPLIED" -eq 1 ]]; then
+	    echo ""
+	    echo "✔ Fixes applied successfully."
+	    echo "You can now start Le Mans Ultimate again and once it started run this script, all should be good."
+	    echo ""
+	    exit 0
+    else
+	    echo ""
+	    echo "Launching SimHub with LMU Wine..."
+	    WINEPREFIX="$WINEPREFIX" "$CUSTOM_WINE" "$SIMHUB_EXE" >/dev/null 2>&1 &
+	    echo ""
+	    echo "SimHub launched for LMU."
+	    echo "Done!"
+	    exit 0
+    fi
+fi
+
+# Launch SimHub
+echo "Launching SimHub..."
+export PYTHONWARNINGS="ignore::UserWarning"
+protontricks-launch --appid "$game" "$SIMHUB_EXE" >/dev/null 2>&1 &
+
+# Run dash.exe only if game is RaceRoom (211500)
+if [[ "$game" = "211500" ]]; then
+	echo "RaceRoom Racing Experience detected, launching Dash..."
+	echo ""
+
+	CACHE_DIR="$HOME/.cache/dash"
+	mkdir -p "$CACHE_DIR"
+
+	DASH_EXE=$(find "$CACHE_DIR" -name "dash.exe" -type f 2>/dev/null | head -1)
+
+	if [[ -z "$DASH_EXE" ]]; then
+		echo "Downloading Dash..."
+
+		if command -v wget >/dev/null; then
+			wget -q "https://sector3studios.github.io/webhud/public/dash.zip" -O "$CACHE_DIR/dash.zip"
+		elif command -v curl >/dev/null; then
+			curl -sL -o "$CACHE_DIR/dash.zip" "https://sector3studios.github.io/webhud/public/dash.zip"
+		else
+			echo "Error: wget or curl not found!"
+			exit 1
+		fi
+
+		if [[ ! -f "$CACHE_DIR/dash.zip" ]]; then
+			echo "Error: Failed to download dash.zip!"
+			exit 1
+		fi
+
+		echo "Extracting Dash..."
+		if command -v unzip >/dev/null; then
+			unzip -q "$CACHE_DIR/dash.zip" -d "$CACHE_DIR"
+			rm -f "$CACHE_DIR/dash.zip"
+		else
+			echo "Error: unzip not found!"
+			exit 1
+		fi
+
+		DASH_EXE=$(find "$CACHE_DIR" -name "dash.exe" -type f 2>/dev/null | head -1)
+		if [[ -z "$DASH_EXE" ]]; then
+			echo "Error: dash.exe not found in extracted files!"
+			exit 1
+		fi
+	else
+		echo "Using cached Dash..."
+	fi
+
+	sleep 2
+
+	echo "Running Dash..."
+	protontricks-launch --appid "$game" "$DASH_EXE" 2>&1 | grep -v -i 'fixme\|W:'
+else
+	echo "SimHub has been launched."
 fi
 
 echo ""
-
-# Ask if user wants to install SimHub
-printf "Install SimHub for $selected_name? (y/n): "
-read -r install_simhub
-echo
-
-if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
-    echo "Downloading SimHub 9.11.5..."
-    
-    # Create temporary directory for download
-    TEMP_DIR="/tmp/simhub_install_$$"
-    mkdir -p "$TEMP_DIR"
-    cd "$TEMP_DIR"
-    
-    # Download SimHub
-    if which wget > /dev/null 2>&1; then
-        wget -q "https://github.com/SHWotever/SimHub/releases/download/9.11.5/SimHub.9.11.5.zip"
-    elif which curl > /dev/null 2>&1; then
-        curl -sL -o "SimHub.9.11.5.zip" "https://github.com/SHWotever/SimHub/releases/download/9.11.5/SimHub.9.11.5.zip"
-    else
-        echo "Error: wget or curl not found!"
-        cd /
-        rm -rf "$TEMP_DIR"
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
-    
-    # Check if download was successful
-    if [ ! -f "SimHub.9.11.5.zip" ]; then
-        echo "Error: Failed to download SimHub!"
-        cd /
-        rm -rf "$TEMP_DIR"
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
-    
-    echo "Download completed. Extracting..."
-    
-    # Extract the zip file
-    if which unzip > /dev/null 2>&1; then
-        unzip -q "SimHub.9.11.5.zip"
-    else
-        echo "Error: unzip not found!"
-        cd /
-        rm -rf "$TEMP_DIR"
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
-    
-    # Find the SimHub Setup executable
-    SIMHUB_SETUP_EXE=$(find "$TEMP_DIR" -name "SimHubSetup_*.exe" -type f)
-    
-    if [ -z "$SIMHUB_SETUP_EXE" ]; then
-        echo "Error: SimHubSetup_*.exe not found in extracted files!"
-        cd /
-        rm -rf "$TEMP_DIR"
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
-    
-    # Set Windows version to Windows 11
-    echo "Setting Windows version to Windows 11..."
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" winetricks -q win11 > /dev/null 2>&1
-    
-    # Display tips before installation
-    echo ""
-    echo "=========================================="
-    echo "IMPORTANT TIPS BEFORE INSTALLATION"
-    echo "=========================================="
-    echo ""
-    echo "1. The SimHub installer will now launch in Wine/Proton"
-    echo "2. Enable only the bellow 2: (You can enable others if you have such devices, just make sure to not intall dotnet via SimHub installer) "
-    echo "   - Open Windows Firewal port, this is for web browser and handy access."
-    echo "   - Default dashes (if you want them)"
-    echo "3. Do not run SimHub from the installer at the end, unmark that option."
-    echo "   - The reason is it will lock the game prefix and you won't be able to start the game via steam."
-    echo "   - In case you did run it, Reboot or killing SimHub process fixes this. No need to reinstall anything."
-    echo ""
-    echo "=========================================="
-    echo ""
-    printf "Press Enter to start the SimHub installer..."
-    read -r dummy
-    echo ""
-    
-    echo "Installing SimHub..."
-    
-    # Run the installer
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE"
-    
-    if [ $? -eq 0 ]; then
-        echo "SimHub installation completed successfully!"
-    else
-        echo "SimHub installation may have failed or is still running."
-    fi
-    
-    # Cleanup
-    cd /
-    rm -rf "$TEMP_DIR"
-fi
-
-echo ""
-
-# Cleanup
-rm -f /tmp/steam_games_$$
 echo "Done!"
+
