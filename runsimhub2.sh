@@ -52,12 +52,11 @@ fi
 if [[ "$game" = "2399420" ]]; then
 	echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Proton..."
 
-    # Auto-detect LMU Proton build
-    CUSTOM_WINE_DIR=$(find "$HOME/.steam/steam/compatibilitytools.d" \
-	    -maxdepth 1 \
-	    -type d \
-	    -name "GE-Proton*-lmu*" \
-	    | head -1)
+# Auto-detect LMU Proton build
+CUSTOM_WINE_DIR=$(find "$HOME/.steam/steam/compatibilitytools.d" \
+-maxdepth 1 \
+-type d \
+-iname "GE-Proton*LMU*" | head -1)	
 
     if [[ -z "$CUSTOM_WINE_DIR" ]]; then
 	    echo "Error: No LMU-specific GE-Proton build found in compatibilitytools.d"
