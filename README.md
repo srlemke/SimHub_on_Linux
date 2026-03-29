@@ -21,6 +21,7 @@
 - `Sets Windows version to Windows 11 for better SimHub compatibility`
 - `Detects LMU custom Proton`
 - `Automatically configures LMU`
+- `Automatically adds dash.exe for RaceRomm SealHUD usage`
 
 ## How to Install:
 ```bash
