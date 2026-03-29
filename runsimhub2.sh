@@ -198,18 +198,18 @@ fi
 
 	# Write JSON
 	REQUIRED_JSON='{
-		"LMU_SharedMemoryMapPlugin64.dll": {
-			" Enabled": 1,
-			"DebugISIInternals": 0,
-			"DebugOutputLevel": 0,
-			"DebugOutputSource": 1,
-			"DedicatedServerMapGlobally": 0,
-			"EnableDirectMemoryAccess": 0,
-			"EnableHWControlInput": 1,
-			"EnableRulesControlInput": 0,
-			"EnableWeatherControlInput": 0,
-			"UnsubscribedBuffersMask": 160
-		},
+	"LMU_SharedMemoryMapPlugin64.dll": {
+		" Enabled": 1,
+		"DebugISIInternals": 0,
+		"DebugOutputLevel": 0,
+		"DebugOutputSource": 1,
+		"DedicatedServerMapGlobally": 0,
+		"EnableDirectMemoryAccess": 0,
+		"EnableHWControlInput": 1,
+		"EnableRulesControlInput": 0,
+		"EnableWeatherControlInput": 0,
+		"UnsubscribedBuffersMask": 160
+	},
 	"rFactor2SharedMemoryMapPlugin64.dll": {
 		" Enabled": 1,
 		"DebugISIInternals": 0,
