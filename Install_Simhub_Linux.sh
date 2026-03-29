@@ -29,6 +29,11 @@ if [ $missing_tools -eq 1 ]; then
     fi
 fi
 
+# If PROTON_VERSION is empty, extract it from config_info
+if [ -z "$PROTON_VERSION" ]; then
+   PROTON_VERSION=$( grep -o 'steamapps/common/[^/]*/' ~/.steam/steam/steamapps/compatdata/$GAME_ID/config_info | head -n1 | sed 's#steamapps/common/##; s#/##')
+fi
+
 echo ""
 
 # Steam directory
@@ -153,7 +158,7 @@ if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
     echo ""
     echo "Please wait..."
     echo ""
-    
+
     # Record start time
     start_time=$(date +%s)
     
