@@ -2,6 +2,10 @@
 - Works for all games. Even LMU custom Proton GE.
 - You never have to run any of this as root. Do not run as root, this is Linux :)
 
+Some details:
+It works, but, this is not optimal, as you have to install dotnet48 and SimHUB for every game prefix.
+So if you have 5 race games installed, you have to install dotnet48 and SimHUB 5 times each.
+
 ![Select Steam Game](screenshot.png)
 
 ## Requirements, those are automatically checked:
