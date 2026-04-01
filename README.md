@@ -24,7 +24,7 @@ any additional software thats not packaged on the distro which makes it usually 
 
 - `Scans installed Steam games`
 - `Checks if game has been run before to confirm a populated game vessel exists`
-- `Installs dotnet48`
+- `Installs dotnet48 if not already present, clears Steam dotnet stub`
 - `Downloads and installs SimHub 9.11.5`
 - `Gives instructions on what SimHub components to install`
 - `Sets Windows version to Windows 11 for better SimHub compatibility`
@@ -39,7 +39,7 @@ chmod +x Install_Simhub_Linux.sh
 ./Install_Simhub_Linux.sh
 ```
 
-## How to run:
+## How to run SimHUB afterward the install script above:
 ```bash
 wget https://raw.githubusercontent.com/srlemke/SimHub_on_Linux/refs/heads/main/runsimhub2.sh
 chmod +x runsimhub2.sh
