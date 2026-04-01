@@ -3,8 +3,13 @@
 - You never have to run any of this as root. Do not run as root, this is Linux :)
 
 Some details:
-It works, but, this is not optimal, as you have to install dotnet48 and SimHUB for every game prefix.
+It works but you have to install dotnet48 and SimHUB for every game prefix.
 So if you have 5 race games installed, you have to install dotnet48 and SimHUB 5 times each.
+There is not really so many simulators, at least for me its no big deal, as long as it works.
+
+There is a few other options out there that bridge the shared memory from the proton prefix to
+other prefixes, I tried it but it was no super easy, this script in the end does not rely on
+any additional software thats not packaged on the distro which makes it usually more streamlined.
 
 ![Select Steam Game](screenshot.png)
 
