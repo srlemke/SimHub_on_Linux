@@ -29,13 +29,6 @@ if [ $missing_tools -eq 1 ]; then
     fi
 fi
 
-# If PROTON_VERSION is empty, extract it from config_info
-if [ -z "$PROTON_VERSION" ]; then
-   PROTON_VERSION=$( grep -o 'steamapps/common/[^/]*/' ~/.steam/steam/steamapps/compatdata/$GAME_ID/config_info | head -n1 | sed 's#steamapps/common/##; s#/##')
-fi
-
-echo ""
-
 # Steam directory
 STEAM_DIR="$HOME/.steam/steam/steamapps"
 
@@ -88,7 +81,6 @@ echo ""
 # Get user selection
 printf "Select a game (0-$((index - 1))): "
 read -r selection
-echo
 
 # Validate selection
 if ! [ "$selection" -ge 0 ] 2>/dev/null || [ "$selection" -ge "$index" ]; then
@@ -102,14 +94,23 @@ selected_line=$(sed -n "$((selection + 1))p" /tmp/steam_games_$$)
 selected_id=$(echo "$selected_line" | awk -F'|' '{print $1}')
 selected_name=$(echo "$selected_line" | awk -F'|' '{print $2}')
 
-echo ""
 echo "You selected:"
 echo "ID: $selected_id"
 echo "Name: $selected_name"
 echo ""
 
+if [ -z "$PROTON_VERSION" ]; then
+    PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
+        | cut -d/ -f9 \
+        | grep Proton \
+        | uniq)
+fi
+
+echo You run $selected_name with: $PROTON_VERSION
+echo ""
+
 # Check if game is running
-echo "Checking if game is running..."
+echo "Checking if game is running:"
 if pgrep -f "$selected_id" > /dev/null 2>&1; then
     echo ""
     echo "ERROR: The game is currently running!"
@@ -121,11 +122,11 @@ if pgrep -f "$selected_id" > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "Game is not running. Continuing..."
+echo "Game is not running, continuing ..."
 echo ""
 
 # Check if game has been run at least once (Proton prefix exists)
-echo "Checking if game has been run before..."
+echo "Checking if game has been run before:"
 PROTON_PREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
 if [ ! -d "$PROTON_PREFIX" ]; then
     echo ""
@@ -148,6 +149,30 @@ read -r install_dotnet
 echo
 
 if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
+    PROTON_DIR="$HOME/.steam/steam/steamapps/common/$PROTON_VERSION"
+    PROTON_WINE="$PROTON_DIR/files/bin/wine"
+    export WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
+    export STEAM_COMPAT_DATA_PATH="$HOME/.steam/steam/steamapps/compatdata/$selected_id"
+    export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
+
+# ---------------------------------------------------------------------------
+# Clean stub dotnet 4 from registry, do nothing if dotnet48 is properly installed
+# ---------------------------------------------------------------------------
+
+# CHECKING IF dotnet48 FROM WINETRICKS IS INSTALLED OR IFS THE STEAM STUB:
+DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
+
+if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
+    FILE_OK=0
+else
+    FILE_OK=1
+fi
+
+if  [ $FILE_OK -eq 0 ]; then
+    echo "An already installed dotnet48 is present, no need to reinstall."
+    echo "We will do a quick check on the installed files."
+    install_result=0
+else
     echo "Installing dotnet48..."
     echo "This may take 5 minutes or more depending on your hardware."
     echo "Please be patient and do not interrupt the process."
@@ -156,28 +181,21 @@ if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
     echo "This is normal and can be safely ignored. Those errors are not uncommon and you can always ignore."
     echo "Click 'No' if prompted and let the installation continue."
     echo ""
-    echo "Please wait..."
-    echo ""
-
-    # Record start time
-    start_time=$(date +%s)
-    
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" winetricks -q --force dotnet48 > /dev/null 2>&1
+    wineserver -k || true
+wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+    echo "Registry verification complete. Now running installer, wait... (~5 min)" 
+    WINETRICKS_WINE="$PROTON_WINE" winetricks -q -f dotnet48 > /dev/null 2>&1
     install_result=$?
+fi
     
-    # Record end time and calculate duration
-    end_time=$(date +%s)
-    duration=$((end_time - start_time))
-    minutes=$((duration / 60))
-    seconds=$((duration % 60))
-    
-    if [ $install_result -eq 0 ]; then
-        echo "dotnet48 installation completed successfully!"
-        echo "Installation took ${minutes}m ${seconds}s"
+if [ $install_result -eq 0 ]; then
+        echo "dotnet48 installation or check finished. All good!"
     else
-        echo "dotnet48 installation failed! Not uncommon, run this script again"
+        echo "dotnet48 installation failed!"
     fi
 else
+
     echo "WARNING: dotnet48 is required for SimHub to work properly!"
     echo "SimHub may not function correctly without it."
     printf "Press Enter to exit..."
@@ -248,13 +266,14 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     fi
     
     # Set Windows version to Windows 11
-    echo "Setting Windows version to Windows 11..."
+    echo "Setting Windows version to Windows 11 for better compatibility..."
     WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" winetricks -q win11 > /dev/null 2>&1
-    
+    echo "done!"
+
     # Display tips before installation
     echo ""
     echo "=========================================="
-    echo "IMPORTANT TIPS BEFORE INSTALLATION"
+    echo "IMPORTANT TIPS BEFORE SIMHUB INSTALLATION"
     echo "=========================================="
     echo ""
     echo "1. The SimHub installer will now launch in Wine/Proton"
@@ -271,10 +290,11 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     read -r dummy
     echo ""
     
-    echo "Installing SimHub..."
+    echo "Installing SimHub... If some error popups appear you can ignore them by clicking No"
     
     # Run the installer
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE"
+    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" 
+    protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE" > /dev/null 2>&1;
     
     if [ $? -eq 0 ]; then
         echo "SimHub installation completed successfully!"
@@ -291,4 +311,3 @@ echo ""
 
 # Cleanup
 rm -f /tmp/steam_games_$$
-echo "Done!"
