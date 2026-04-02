@@ -60,6 +60,10 @@ if [[ "$game" = "2399420" ]]; then
 
     if [[ -z "$CUSTOM_WINE_DIR" ]]; then
         echo "Error: No LMU-specific GE-Proton build found in compatibilitytools.d"
+        echo "Without a custom GE-Proton LMU does not work."
+        echo "Download it pre-built here: https://github.com/JacKeTUs/proton-ge-custom/releases"
+        echo "Unpack it to: ~/.steam/steam/compatibilitytools.d and restart Steam"
+        echo "After Steam restart, select the new Proton in Steam/Settings/Compatibility."
         read -p "Press ENTER to exit..."
         exit 1
     fi
