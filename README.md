@@ -1,5 +1,6 @@
 - A bash script to install SimHub and dotnet48 for Steam games running under Proton/Wine.
 - Works for all games. Even LMU custom Proton GE.
+- This also works if you only want to install dotnet48 into a Steam game.
 - You never have to run any of this as root. Do not run as root, this is Linux :)
 
 ![Select Steam Game](screenshot.png)
