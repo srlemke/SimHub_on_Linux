@@ -31,6 +31,7 @@ chmod +x Install_Simhub_Linux.sh runsimhub2.sh
 ./Install_Simhub_Linux
 ./runsimhub2.sh
 ```
+
 - You probably can add this command to a menu laucher with icon.
 
 ## Running:
