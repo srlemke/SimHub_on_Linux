@@ -105,11 +105,11 @@ if [[ "$game" = "2399420" ]]; then
     if [[ ! -f "$LMU_JSON" ]]; then
         NEED_FIX=1
     else
-        if ! grep -A15 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+        if ! grep -A10 '"LMU_SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
             NEED_FIX=1
         fi
 
-        if ! grep -A15 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
+        if ! grep -A10 '"rFactor2SharedMemoryMapPlugin64.dll"' "$LMU_JSON" | grep -q '" Enabled": 1'; then
             NEED_FIX=1
         fi
     fi
