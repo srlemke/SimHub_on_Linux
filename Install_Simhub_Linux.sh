@@ -182,8 +182,9 @@ else
     echo "and you can always ignore by clicking No"
     echo ""
     wineserver -k || true
-wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+    #Remove fake/stub Dotnet 4.8 added by Steam
+    wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+    wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
     echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)" 
     WINETRICKS_WINE="$PROTON_WINE" winetricks -q -f dotnet48 > /dev/null 2>&1
     install_result=$?
