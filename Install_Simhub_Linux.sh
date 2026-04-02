@@ -178,13 +178,13 @@ else
     echo "Please be patient and do not interrupt the process."
     echo ""
     echo "NOTE: A popup may appear saying 'Failed to start rundll32.exe'."
-    echo "This is normal and can be safely ignored. Those errors are not uncommon and you can always ignore."
-    echo "Click 'No' if prompted and let the installation continue."
+    echo "This is normal and can be safely ignored. Those errors are not uncommon"
+    echo "and you can always ignore by clicking No"
     echo ""
     wineserver -k || true
 wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
 wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-    echo "Registry verification complete. Now running installer, wait... (~5 min)" 
+    echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)" 
     WINETRICKS_WINE="$PROTON_WINE" winetricks -q -f dotnet48 > /dev/null 2>&1
     install_result=$?
 fi
@@ -296,11 +296,21 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" 
     protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE" > /dev/null 2>&1;
     
-    if [ $? -eq 0 ]; then
-        echo "SimHub installation completed successfully!"
+if [ $? -eq 0 ]; then
+    echo "SimHub installation completed successfully!"
+
+    # Check if selected_id requires additional configuration
+    if [ "$selected_id" = "2399420" ] || [ "$selected_id" = "211500" ]; then
+        echo "No additional SimHub configuration is required for this game."
     else
-        echo "SimHub installation may have failed or is still running."
+        echo "You may need to configure SimHub for this game."
+        echo "In most cases this can be done directly via SimHub:"
+        echo "Game Config option -> Configure Game Now"
     fi
+
+else
+    echo "SimHub installation may have failed or is still running."
+fi
     
     # Cleanup
     cd /
