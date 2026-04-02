@@ -99,14 +99,37 @@ echo "ID: $selected_id"
 echo "Name: $selected_name"
 echo ""
 
+PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
+	|grep pfx |cut -d/ -f7- |sed 's|/files/share/default_pfx/.*||' )
+   
+#results in the path for the in use Proton, like:
+#/compatibilitytools.d/GE-Proton10-34-LMU-hid_fixes
+#Steam/steamapps/common/Proton Hotfix
+
 if [ -z "$PROTON_VERSION" ]; then
-    PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
-        | cut -d/ -f9 \
-        | grep Proton \
-        | uniq)
+    echo "ERROR: Could not detect Proton version from config_info."
+    exit 1
 fi
 
-echo You run $selected_name with: $PROTON_VERSION
+
+PROTON_DIR="$HOME/.steam/steam/$PROTON_VERSION"
+PROTON_WINE="$PROTON_DIR/files/bin/wine"
+WINE="$PROTON_WINE" 
+
+export WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
+export STEAM_COMPAT_DATA_PATH="$HOME/.steam/steam/steamapps/compatdata/$selected_id"
+export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
+export PROTON_VERSION=$(basename "$PROTON_DIR")
+
+# Normalize Proton Experimental naming
+if [ "$PROTON_VERSION" = "Proton - Experimental" ]; then
+    PROTON_VERSION="Proton Experimental"
+fi
+
+echo PROTON_VERSION: $PROTON_VERSION
+echo PROTON_DIR: $PROTON_DIR
+echo PROTON_WINE:  $PROTON_WINE
+echo Game Prefix: $WINEPREFIX
 echo ""
 
 # Check if game is running
@@ -149,28 +172,17 @@ read -r install_dotnet
 echo
 
 if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
-    PROTON_DIR="$HOME/.steam/steam/steamapps/common/$PROTON_VERSION"
-    PROTON_WINE="$PROTON_DIR/files/bin/wine"
-    export WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
-    export STEAM_COMPAT_DATA_PATH="$HOME/.steam/steam/steamapps/compatdata/$selected_id"
-    export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
 
-# ---------------------------------------------------------------------------
-# Clean stub dotnet 4 from registry, do nothing if dotnet48 is properly installed
-# ---------------------------------------------------------------------------
-
-# CHECKING IF dotnet48 FROM WINETRICKS IS INSTALLED OR IFS THE STEAM STUB:
+# Check if a installed dotnet48 via winetricks is present"
 DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
 
 if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
-    FILE_OK=0
+    Install_OK=0
 else
-    FILE_OK=1
+    Install_OK=1
 fi
 
-if  [ $FILE_OK -eq 0 ]; then
-    echo "An already installed dotnet48 is present, no need to reinstall."
-    echo "We will do a quick check on the installed files."
+if  [ $Install_OK -eq 0 ]; then
     install_result=0
 else
     echo "Installing dotnet48..."
@@ -182,16 +194,18 @@ else
     echo "and you can always ignore by clicking No"
     echo ""
     wineserver -k || true
-    #Remove fake/stub Dotnet 4.8 added by Steam
+    #Since its not winetricks dotn48 lets remove fake/stub Dotnet 4.8 that steam adds by default:
     wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
     wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-    echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)" 
-    WINETRICKS_WINE="$PROTON_WINE" winetricks -q -f dotnet48 > /dev/null 2>&1
+    echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
+
+    #Use wine from the Proton prefix in use:
+    winetricks -q -f dotnet48
     install_result=$?
 fi
     
 if [ $install_result -eq 0 ]; then
-        echo "dotnet48 installation or check finished. All good!"
+        echo "dotnet48 installation looks good!"
     else
         echo "dotnet48 installation failed!"
     fi
@@ -268,7 +282,7 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     
     # Set Windows version to Windows 11
     echo "Setting Windows version to Windows 11 for better compatibility..."
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" winetricks -q win11 > /dev/null 2>&1
+    winetricks -q win11 > /dev/null 2>&1
     echo "done!"
 
     # Display tips before installation
@@ -291,10 +305,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     read -r dummy
     echo ""
     
-    echo "Installing SimHub... If some error popups appear you can ignore them by clicking No"
+    echo "Installing SimHub... If some rundll32.exe errors appear you can ignore them by clicking No"
     
     # Run the installer
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx" 
     protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE" > /dev/null 2>&1;
     
 if [ $? -eq 0 ]; then
@@ -312,13 +325,13 @@ if [ $? -eq 0 ]; then
 else
     echo "SimHub installation may have failed or is still running."
 fi
-    
-    # Cleanup
+
+# Cleanup SimHUB
     cd /
     rm -rf "$TEMP_DIR"
 fi
 
 echo ""
 
-# Cleanup
+# Cleanup Global
 rm -f /tmp/steam_games_$$
