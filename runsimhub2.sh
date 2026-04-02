@@ -253,7 +253,7 @@ protontricks-launch --appid "$game" "$SIMHUB_EXE" >/dev/null 2>&1 &
 # RaceRoom Dash support (AppId 211500)
 ###############################################
 if [[ "$game" = "211500" ]]; then
-    echo "RaceRoom Racing Experience detected, launching Dash..."
+    echo "RaceRoom Racing Experience detected, launching Dash (For SealHUD)"
     echo ""
 
     CACHE_DIR="$HOME/.cache/dash"
