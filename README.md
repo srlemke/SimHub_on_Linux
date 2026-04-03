@@ -8,7 +8,6 @@
 ## Requirements, those are automatically checked:
 
 - `protontricks`
-- `winetricks`
 - `wget` or `curl`
 - `unzip`
 
