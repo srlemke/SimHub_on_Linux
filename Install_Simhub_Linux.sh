@@ -48,7 +48,8 @@ for manifest in "$STEAM_DIR"/appmanifest_*.acf; do
         if echo "$game_name" | grep -qi "Steam\|Proton"; then
             continue
         fi
-        
+
+		# Index:
         if [ -n "$game_name" ]; then
             # Store in temporary file instead of arrays (more portable)
             echo "$app_id|$game_name" >> /tmp/steam_games_$$
@@ -57,7 +58,7 @@ for manifest in "$STEAM_DIR"/appmanifest_*.acf; do
     fi
 done
 
-# Check if any games were found
+# Check if any games were indexed:
 if [ $index -eq 0 ]; then
     echo "No games found in Steam directory."
     echo ""
@@ -84,7 +85,7 @@ read -r selection
 
 # Validate selection
 if ! [ "$selection" -ge 0 ] 2>/dev/null || [ "$selection" -ge "$index" ]; then
-    echo "Invalid selection."
+    echo "Invalid selection, closing."
     rm -f /tmp/steam_games_$$
     exit 1
 fi
@@ -99,26 +100,28 @@ echo "ID: $selected_id"
 echo "Name: $selected_name"
 echo ""
 
+# Extract the path for the Proton Version used by the selected game:
 PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
 	|grep pfx |cut -d/ -f7- |sed 's|/files/share/default_pfx/.*||' )
-   
-#results in the path for the in use Proton, like:
-#/compatibilitytools.d/GE-Proton10-34-LMU-hid_fixes
-#Steam/steamapps/common/Proton Hotfix
+# Extracted path looks like:
+# /compatibilitytools.d/GE-Proton10-34-LMU-hid_fixes
+# /Steam/steamapps/common/Proton Hotfix
+# Others, depending on what Proton is in use.
 
 if [ -z "$PROTON_VERSION" ]; then
     echo "ERROR: Could not detect Proton version from config_info."
     exit 1
 fi
 
-
+# Set the PROTON path variables to what the selected game uses:
 PROTON_DIR="$HOME/.steam/steam/$PROTON_VERSION"
 PROTON_WINE="$PROTON_DIR/files/bin/wine"
-WINE="$PROTON_WINE" 
 
+# Since we use winetricks:
 export WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
 export STEAM_COMPAT_DATA_PATH="$HOME/.steam/steam/steamapps/compatdata/$selected_id"
-export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
+
+#Sometimes the used proton variable is empty, lets make sure to populate it with in use Proton:
 export PROTON_VERSION=$(basename "$PROTON_DIR")
 
 # Normalize Proton Experimental naming
@@ -126,6 +129,7 @@ if [ "$PROTON_VERSION" = "Proton - Experimental" ]; then
     PROTON_VERSION="Proton Experimental"
 fi
 
+# Let the user know what we detected:
 echo PROTON_VERSION: $PROTON_VERSION
 echo PROTON_DIR: $PROTON_DIR
 echo PROTON_WINE:  $PROTON_WINE
@@ -173,16 +177,16 @@ echo
 
 if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
 
-# Check if a installed dotnet48 via winetricks is present"
+# Check if a winetricks installed dotnet48 is present:
 DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
 
 if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
-    Install_OK=0
+    dotnet48_present=0 #Already Installed
 else
-    Install_OK=1
+    dotnet48_present=1 #Not Installed
 fi
 
-if  [ $Install_OK -eq 0 ]; then
+if  [ $dotnet48_present -eq 0 ]; then
     install_result=0
 else
     echo "Installing dotnet48..."
