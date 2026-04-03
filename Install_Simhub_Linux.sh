@@ -285,9 +285,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     fi
     
     # Set Windows version to Windows 11
-    echo "Setting Windows version to Windows 11 for better compatibility..."
-    winetricks -q win11 > /dev/null 2>&1
-    echo "done!"
+    # echo "Setting Windows version to Windows 11 for better compatibility..."
+    # winetricks -q win11 > /dev/null 2>&1
+    # echo "done!"
 
     # Display tips before installation
     echo ""
@@ -295,27 +295,28 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     echo "IMPORTANT TIPS BEFORE SIMHUB INSTALLATION"
     echo "=========================================="
     echo ""
-    echo "1. The SimHub installer will now launch in Wine/Proton"
-    echo "2. Enable only the bellow 2: (You can enable others if you have such devices, just make sure to not intall dotnet via SimHub installer) "
-    echo "   - Open Windows Firewal port, this is for web browser and handy access."
-    echo "   - Default dashes (if you want them)"
-    echo "3. Do not run SimHub from the installer at the end, unmark that option."
-    echo "   - The reason is it will lock the game prefix and you won't be able to start the game via steam."
-    echo "   - In case you did run it, Reboot or killing SimHub process fixes this. No need to reinstall anything."
+    echo "1. Make sure to uncheck: Install Microsoft .Net and C++ redistributable"
     echo ""
+    echo "2. Do not run SimHub from the installer at the end, uncheck that option."
+    echo "Otherwise it locks the game prefix and you won't be able to start the game via steam."
+    echo "   - In case you did run it, close it and the game should start."
+    echo ""
+    echo "If you have more games the created menu entries are unreliable due differemt game prefixes."
+    echo "Run it with the other provided script (runsimhub2.sh), it auto detects the running game and proton version."
     echo "=========================================="
     echo ""
     printf "Press Enter to start the SimHub installer..."
     read -r dummy
     echo ""
     
-    echo "Installing SimHub... If some rundll32.exe errors appear you can ignore them by clicking No"
+    echo "Installing SimHub... If rundll32.exe errors appear you can ignore them by clicking No."
     
     # Run the installer
     protontricks-launch --appid "$selected_id" "$SIMHUB_SETUP_EXE" > /dev/null 2>&1;
     
 if [ $? -eq 0 ]; then
     echo "SimHub installation completed successfully!"
+    echo "You can update it to the latest version normally via the SimHUB UI"
 
     # Check if selected_id requires additional configuration
     if [ "$selected_id" = "2399420" ] || [ "$selected_id" = "211500" ]; then
@@ -323,7 +324,7 @@ if [ $? -eq 0 ]; then
     else
         echo "You may need to configure SimHub for this game."
         echo "In most cases this can be done directly via SimHub:"
-        echo "Game Config option -> Configure Game Now"
+        echo "Game Config option -> Configure Game Now."
     fi
 
 else
