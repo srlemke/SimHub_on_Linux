@@ -204,7 +204,7 @@ else
     echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
 
     #Use wine from the Proton prefix in use:
-    winetricks -q -f dotnet48
+    winetricks -q -f dotnet48 > /dev/null 2>&1;
     install_result=$?
 fi
     
