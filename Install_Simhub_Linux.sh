@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#SimHUB Version that will be downloaded
+version=9.11.9
+
 # Check for required tools
 echo "Checking for required tools..."
 missing_tools=0
@@ -167,28 +170,49 @@ if [ ! -d "$PROTON_PREFIX" ]; then
     exit 1
 fi
 
-echo "Game prefix found. Continuing..."
+echo "Game prefix found, continuing ..."
 echo ""
 
-# Ask if user wants to install dotnet48
-printf "Install dotnet48 for $selected_name? (y/n): "
-read -r install_dotnet
-echo
-
-if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ]; then
-
+dotnet_installed() {
 # Check if a winetricks installed dotnet48 is present:
-DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
+    DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
 
-if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
-    dotnet48_present=0 #Already Installed
-else
-    dotnet48_present=1 #Not Installed
-fi
+    if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
+        dotnet48_present=0 #Already Installed
+    else
+        dotnet48_present=1 #Not Installed
+    fi
+}
+dotnet_installed
 
 if  [ $dotnet48_present -eq 0 ]; then
-    install_result=0
+    echo "Microsoft .NET Framework 4.8 appears to already be installed."
+    echo "A reinstall maybe a good idea if the windows app, like SimHUB stopped working."
+    
+    printf "Do you want to force a dotnet48 reinstall (y/N): " answer
+    read -r answer
+
+    if [ "$answer" = "y" ] || [ "$answer" = "Y" ] ; then
+        echo "User chose to force reinstall."
+        wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+        wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+        echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
+        winetricks -q -f dotnet48 > /dev/null 2>&1;
+        install_result=$?
+    fi
 else
+    echo "Skipping reinstallation."
+    echo "Consider reinstallation if the windows app is not starting."
+fi
+
+
+if [ $dotnet48_present -eq 1 ] ; then
+    # Ask if user wants to install dotnet48
+    printf "Install dotnet48 for $selected_name? (y/n): "
+    read -r install_dotnet
+fi
+
+if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ] ; then
     echo "Installing dotnet48..."
     echo "This may take 5 minutes or more depending on your hardware."
     echo "Please be patient and do not interrupt the process."
@@ -197,7 +221,7 @@ else
     echo "This is normal and can be safely ignored. Those errors are not uncommon"
     echo "and you can always ignore by clicking No"
     echo ""
-    wineserver -k || true
+    #wineserver -k || true
     #Since its not winetricks dotn48 lets remove fake/stub Dotnet 4.8 that steam adds by default:
     wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
     wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
@@ -205,22 +229,28 @@ else
 
     #Use wine from the Proton prefix in use:
     winetricks -q -f dotnet48 > /dev/null 2>&1;
+    #winetricks -q -f dotnet48 > /dev/null 2>&1;
     install_result=$?
-fi
-    
-if [ $install_result -eq 0 ]; then
-        echo "dotnet48 installation looks good!"
-    else
-        echo "dotnet48 installation failed!"
-    fi
 else
+    if [ $dotnet48_present -eq 1 ] ; then
+        echo "dotnet48 installation failed!"
+        echo "WARNING: dotnet48 is required for SimHub to work properly!"
+        echo "SimHub may not function correctly without it."
+        echo ""
+        echo "Tip, some games need to run at least 2 times for the dotnet48 install properly"
+        echo "Maybe start stop the game and run this script again."
+        echo ""
+    
+        printf "Press Enter to exit..."
+        read -r dummy
+        rm -f /tmp/steam_games_$$
+        exit 1
+    fi
+fi
 
-    echo "WARNING: dotnet48 is required for SimHub to work properly!"
-    echo "SimHub may not function correctly without it."
-    printf "Press Enter to exit..."
-    read -r dummy
-    rm -f /tmp/steam_games_$$
-    exit 1
+dotnet_installed
+if [ "$dotnet48_present" -eq 0 ]; then
+    echo "dotnet48 installation looks good!"
 fi
 
 echo ""
@@ -240,9 +270,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     
     # Download SimHub
     if which wget > /dev/null 2>&1; then
-        wget -q "https://github.com/SHWotever/SimHub/releases/download/9.11.5/SimHub.9.11.5.zip"
+        wget -q "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
     elif which curl > /dev/null 2>&1; then
-        curl -sL -o "SimHub.9.11.5.zip" "https://github.com/SHWotever/SimHub/releases/download/9.11.5/SimHub.9.11.5.zip"
+        curl -sL -o "SimHub."$version".zip" "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
     else
         echo "Error: wget or curl not found!"
         cd /
@@ -252,7 +282,7 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     fi
     
     # Check if download was successful
-    if [ ! -f "SimHub.9.11.5.zip" ]; then
+    if [ ! -f "SimHub."$version".zip" ]; then
         echo "Error: Failed to download SimHub!"
         cd /
         rm -rf "$TEMP_DIR"
@@ -264,7 +294,7 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     
     # Extract the zip file
     if which unzip > /dev/null 2>&1; then
-        unzip -q "SimHub.9.11.5.zip"
+        unzip -q "SimHub."$version".zip"
     else
         echo "Error: unzip not found!"
         cd /
