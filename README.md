@@ -29,7 +29,7 @@
 git clone https://github.com/srlemke/SimHub_on_Linux.git
 cd SimHub_on_Linux/
 chmod +x Install_Simhub_Linux.sh runsimhub2.sh
-./Install_Simhub_Linux
+./Install_Simhub_Linux.sh
 ./runsimhub2.sh
 ```
 
