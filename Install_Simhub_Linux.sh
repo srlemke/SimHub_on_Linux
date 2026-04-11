@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #SimHUB Version that will be downloaded
-version=9.11.9
+version=9.11.10
 
 # Check for required tools
 echo "Checking for required tools..."
