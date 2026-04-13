@@ -24,7 +24,7 @@ fi
 
 if [ $missing_tools -eq 1 ]; then
     echo ""
-    printf "Continue anyway? (y/n): "
+    printf "Continue anyway? (y/N): "
     read -r reply
     echo
     if [ "$reply" != "y" ] && [ "$reply" != "Y" ]; then
@@ -199,16 +199,15 @@ if  [ $dotnet48_present -eq 0 ]; then
         echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
         winetricks -q -f dotnet48 > /dev/null 2>&1;
         install_result=$?
+    else
+        echo "Skipping reinstallation."
+        echo "Consider reinstallation if the windows app is not starting."
     fi
-else
-    echo "Skipping reinstallation."
-    echo "Consider reinstallation if the windows app is not starting."
 fi
-
 
 if [ $dotnet48_present -eq 1 ] ; then
     # Ask if user wants to install dotnet48
-    printf "Install dotnet48 for $selected_name? (y/n): "
+    printf "Install dotnet48 for $selected_name? (y/N): "
     read -r install_dotnet
 fi
 
@@ -256,12 +255,12 @@ fi
 echo ""
 
 # Ask if user wants to install SimHub
-printf "Install SimHub for $selected_name? (y/n): "
+printf "Install SimHub-"$version" for $selected_name? (y/N): "
 read -r install_simhub
 echo
 
 if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
-    echo "Downloading SimHub 9.11.5..."
+    echo "Downloading SimHub-"$version"..."
     
     # Create temporary directory for download
     TEMP_DIR="/tmp/simhub_install_$$"
