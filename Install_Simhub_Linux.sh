@@ -3,21 +3,31 @@
 #SimHUB Version that will be downloaded
 version=9.11.10
 
+# Cleanup trap: remove temp files on exit (normal or error)
+TEMP_DIR=""
+cleanup() {
+    rm -f /tmp/steam_games_$$
+    if [ -n "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
+}
+trap cleanup EXIT
+
 # Check for required tools
 echo "Checking for required tools..."
 missing_tools=0
 
-if ! which protontricks > /dev/null 2>&1; then
+if ! command -v protontricks > /dev/null 2>&1; then
     echo "WARNING: protontricks is not installed"
     missing_tools=1
 fi
 
-if ! which winetricks > /dev/null 2>&1; then
+if ! command -v winetricks > /dev/null 2>&1; then
     echo "WARNING: winetricks is not installed"
     missing_tools=1
 fi
 
-if ! which wget > /dev/null 2>&1 && ! which curl > /dev/null 2>&1; then
+if ! command -v wget > /dev/null 2>&1 && ! command -v curl > /dev/null 2>&1; then
     echo "WARNING: wget or curl is not installed (needed for downloads)"
     missing_tools=1
 fi
@@ -189,7 +199,7 @@ if  [ $dotnet48_present -eq 0 ]; then
     echo "Microsoft .NET Framework 4.8 appears to already be installed."
     echo "A reinstall maybe a good idea if the windows app, like SimHUB stopped working."
     
-    printf "Do you want to force a dotnet48 reinstall (y/N): " answer
+    printf "Do you want to force a dotnet48 reinstall (y/N): "
     read -r answer
 
     if [ "$answer" = "y" ] || [ "$answer" = "Y" ] ; then
@@ -200,12 +210,9 @@ if  [ $dotnet48_present -eq 0 ]; then
         winetricks -q -f dotnet48 > /dev/null 2>&1;
         install_result=$?
     fi
-else
-    echo "Skipping reinstallation."
-    echo "Consider reinstallation if the windows app is not starting."
 fi
 
-
+install_dotnet=""
 if [ $dotnet48_present -eq 1 ] ; then
     # Ask if user wants to install dotnet48
     printf "Install dotnet48 for $selected_name? (y/n): "
@@ -261,7 +268,7 @@ read -r install_simhub
 echo
 
 if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
-    echo "Downloading SimHub 9.11.5..."
+    echo "Downloading SimHub $version..."
     
     # Create temporary directory for download
     TEMP_DIR="/tmp/simhub_install_$$"
@@ -269,9 +276,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     cd "$TEMP_DIR"
     
     # Download SimHub
-    if which wget > /dev/null 2>&1; then
+    if command -v wget > /dev/null 2>&1; then
         wget -q "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
-    elif which curl > /dev/null 2>&1; then
+    elif command -v curl > /dev/null 2>&1; then
         curl -sL -o "SimHub."$version".zip" "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
     else
         echo "Error: wget or curl not found!"
@@ -293,7 +300,7 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     echo "Download completed. Extracting..."
     
     # Extract the zip file
-    if which unzip > /dev/null 2>&1; then
+    if command -v unzip > /dev/null 2>&1; then
         unzip -q "SimHub."$version".zip"
     else
         echo "Error: unzip not found!"
@@ -315,9 +322,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     fi
     
     # Set Windows version to Windows 11
-    # echo "Setting Windows version to Windows 11 for better compatibility..."
-    # winetricks -q win11 > /dev/null 2>&1
-    # echo "done!"
+    echo "Setting Windows version to Windows 11 for better compatibility..."
+    winetricks -q win11 > /dev/null 2>&1
+    echo "done!"
 
     # Display tips before installation
     echo ""
