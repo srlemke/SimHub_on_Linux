@@ -23,7 +23,7 @@ if ! which wget > /dev/null 2>&1 && ! which curl > /dev/null 2>&1; then
 fi
 
 if [ $missing_tools -eq 1 ]; then
-    echo ""
+    echo
     printf "Continue anyway? (y/N): "
     read -r reply
     echo
@@ -64,23 +64,23 @@ done
 # Check if any games were indexed:
 if [ $index -eq 0 ]; then
     echo "No games found in Steam directory."
-    echo ""
+    echo
     echo "NOTE: If your game is not listed, you need to run it at least once"
     echo "and close it. This creates the necessary Proton/Wine prefix files."
-    echo ""
+    echo
     rm -f /tmp/steam_games_$$
     exit 1
 fi
 
 # Display menu
-echo ""
+echo
 echo "=== Available Games ==="
 awk -F'|' '{print NR-1 "] " $1 " - " $2}' /tmp/steam_games_$$
 
-echo ""
+echo
 echo "NOTE: If your game is not listed, you need to run it at least once"
 echo "and close it. This creates the necessary Proton/Wine prefix files."
-echo ""
+echo
 
 # Get user selection
 printf "Select a game (0-$((index - 1))): "
@@ -101,7 +101,7 @@ selected_name=$(echo "$selected_line" | awk -F'|' '{print $2}')
 echo "You selected:"
 echo "ID: $selected_id"
 echo "Name: $selected_name"
-echo ""
+echo
 
 # Extract the path for the Proton Version used by the selected game:
 PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
@@ -137,15 +137,15 @@ echo PROTON_VERSION: $PROTON_VERSION
 echo PROTON_DIR: $PROTON_DIR
 echo PROTON_WINE:  $PROTON_WINE
 echo Game Prefix: $WINEPREFIX
-echo ""
+echo
 
 # Check if game is running
 echo "Checking if game is running:"
 if pgrep -f "$selected_id" > /dev/null 2>&1; then
-    echo ""
+    echo
     echo "ERROR: The game is currently running!"
     echo "Please close the game before installing SimHub or dotnet48."
-    echo ""
+    echo
     printf "Press Enter to exit..."
     read -r dummy
     rm -f /tmp/steam_games_$$
@@ -153,17 +153,18 @@ if pgrep -f "$selected_id" > /dev/null 2>&1; then
 fi
 
 echo "Game is not running, continuing ..."
-echo ""
+echo
 
 # Check if game has been run at least once (Proton prefix exists)
 echo "Checking if game has been run before:"
 PROTON_PREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
+
 if [ ! -d "$PROTON_PREFIX" ]; then
-    echo ""
+    echo
     echo "ERROR: Game has never been run before!"
     echo "Please run the game at least once and close it."
     echo "This creates the necessary Proton/Wine prefix files."
-    echo ""
+    echo
     printf "Press Enter to exit..."
     read -r dummy
     rm -f /tmp/steam_games_$$
@@ -171,89 +172,80 @@ if [ ! -d "$PROTON_PREFIX" ]; then
 fi
 
 echo "Game prefix found, continuing ..."
-echo ""
+echo
 
+##.NET:
 dotnet_installed() {
 # Check if a winetricks installed dotnet48 is present:
     DOTNET_DIR="$WINEPREFIX/drive_c/windows/Microsoft.NET/Framework/v4.0.30319"
 
     if [ -f "$DOTNET_DIR/mscorlib.dll" ] && [ $(stat -c%s "$DOTNET_DIR/mscorlib.dll") -gt 1000000 ]; then
-        dotnet48_present=0 #Already Installed
+        return 0 #Already installed
     else
-        dotnet48_present=1 #Not Installed
+        return 1 #Not installed
     fi
 }
-dotnet_installed
 
-if  [ $dotnet48_present -eq 0 ]; then
+install_dotnet() {
+    echo "Installing dotnet48..."
+    echo "This may take 5 minutes or more depending on your hardware."
+    echo "Please be patient and do not interrupt the process."
+    echo
+    echo "NOTE: A popup may appear saying 'Failed to start rundll32.exe'."
+    echo "This is normal and can be safely ignored. Those errors are not uncommon"
+    echo "and you can always ignore by clicking No"
+    echo
+    wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+    wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
+    echo "Cleared old invalid .NET registry entries. Now running dotnet48 installer, wait... (~5 min)"
+    winetricks -q -f dotnet48 > /dev/null 2>&1;
+    install_result=$?
+}
+
+if dotnet_installed; then
     echo "Microsoft .NET Framework 4.8 appears to already be installed."
     echo "A reinstall maybe a good idea if the windows app, like SimHUB stopped working."
-    
-    printf "Do you want to force a dotnet48 reinstall (y/N): " answer
+    echo
+    printf "Do you want to reinstall dotnet48 (y/N): " answer
     read -r answer
 
     if [ "$answer" = "y" ] || [ "$answer" = "Y" ] ; then
-        echo "User chose to force reinstall."
-        wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-        wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-        echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
-        winetricks -q -f dotnet48 > /dev/null 2>&1;
-        install_result=$?
+        install_dotnet
     else
         echo "Skipping reinstallation."
         echo "Consider reinstallation if the windows app is not starting."
     fi
 fi
 
-if [ $dotnet48_present -eq 1 ] ; then
+if ! dotnet_installed; then
     # Ask if user wants to install dotnet48
     printf "Install dotnet48 for $selected_name? (y/N): "
     read -r install_dotnet
 fi
 
 if [ "$install_dotnet" = "y" ] || [ "$install_dotnet" = "Y" ] ; then
-    echo "Installing dotnet48..."
-    echo "This may take 5 minutes or more depending on your hardware."
-    echo "Please be patient and do not interrupt the process."
-    echo ""
-    echo "NOTE: A popup may appear saying 'Failed to start rundll32.exe'."
-    echo "This is normal and can be safely ignored. Those errors are not uncommon"
-    echo "and you can always ignore by clicking No"
-    echo ""
-    #wineserver -k || true
-    #Since its not winetricks dotn48 lets remove fake/stub Dotnet 4.8 that steam adds by default:
-    wine reg delete "HKLM\\Software\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-    wine reg delete "HKLM\\Software\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4" /f >/dev/null 2>&1 || true
-    echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
-
-    #Use wine from the Proton prefix in use:
-    winetricks -q -f dotnet48 > /dev/null 2>&1;
-    #winetricks -q -f dotnet48 > /dev/null 2>&1;
-    install_result=$?
-else
-    if [ $dotnet48_present -eq 1 ] ; then
-        echo "dotnet48 installation failed!"
-        echo "WARNING: dotnet48 is required for SimHub to work properly!"
-        echo "SimHub may not function correctly without it."
-        echo ""
-        echo "Tip, some games need to run at least 2 times for the dotnet48 install properly"
-        echo "Maybe start stop the game and run this script again."
-        echo ""
-    
-        printf "Press Enter to exit..."
-        read -r dummy
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
+    install_dotnet
+elif ! dotnet_installed; then
+    echo "dotnet48 installation not present!"
+    echo "WARNING: dotnet48 is required for SimHub-"$version" to work!"
+    echo
+    echo "Tip, some games need to run at least 2 times for the dotnet48 install properly"
+    echo "Maybe start stop the game and run this script again."
+    echo
+    printf "Press Enter to exit..."
+    read -r dummy
+    rm -f /tmp/steam_games_$$
+    exit 1
 fi
 
-dotnet_installed
-if [ "$dotnet48_present" -eq 0 ]; then
-    echo "dotnet48 installation looks good!"
+if ! dotnet_installed; then
+    echo "dotnet48 missing, try again."
+    exit 1
 fi
 
-echo ""
+echo
 
+##SIMHUB:
 # Ask if user wants to install SimHub
 printf "Install SimHub-"$version" for $selected_name? (y/N): "
 read -r install_simhub
@@ -272,13 +264,11 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
         wget -q "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
     elif which curl > /dev/null 2>&1; then
         curl -sL -o "SimHub."$version".zip" "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
-    else
-        echo "Error: wget or curl not found!"
-        cd /
-        rm -rf "$TEMP_DIR"
-        rm -f /tmp/steam_games_$$
-        exit 1
-    fi
+	fi
+else
+	echo "SimHub-"$version" install cancelled, bye."
+	exit 1
+fi
     
     # Check if download was successful
     if [ ! -f "SimHub."$version".zip" ]; then
@@ -312,31 +302,26 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
         rm -f /tmp/steam_games_$$
         exit 1
     fi
-    
-    # Set Windows version to Windows 11
-    # echo "Setting Windows version to Windows 11 for better compatibility..."
-    # winetricks -q win11 > /dev/null 2>&1
-    # echo "done!"
 
     # Display tips before installation
-    echo ""
+    echo
     echo "=========================================="
     echo "IMPORTANT TIPS BEFORE SIMHUB INSTALLATION"
     echo "=========================================="
-    echo ""
+    echo
     echo "1. Make sure to uncheck: Install Microsoft .Net and C++ redistributable"
-    echo ""
+    echo
     echo "2. Do not run SimHub from the installer at the end, uncheck that option."
     echo "Otherwise it locks the game prefix and you won't be able to start the game via steam."
     echo "   - In case you did run it, close it and the game should start."
-    echo ""
+    echo
     echo "If you have more games the created menu entries are unreliable due differemt game prefixes."
     echo "Run it with the other provided script (runsimhub2.sh), it auto detects the running game and proton version."
     echo "=========================================="
-    echo ""
+    echo
     printf "Press Enter to start the SimHub installer..."
     read -r dummy
-    echo ""
+    echo
     
     echo "Installing SimHub... If rundll32.exe errors appear you can ignore them by clicking No."
     
@@ -346,6 +331,8 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
 if [ $? -eq 0 ]; then
     echo "SimHub installation completed successfully!"
     echo "You can update it to the latest version normally via the SimHUB UI"
+	# Cleanup SimHUB Downloaded files
+	rm -rf "$TEMP_DIR"
 
     # Check if selected_id requires additional configuration
     if [ "$selected_id" = "2399420" ] || [ "$selected_id" = "211500" ]; then
@@ -354,18 +341,13 @@ if [ $? -eq 0 ]; then
         echo "You may need to configure SimHub for this game."
         echo "In most cases this can be done directly via SimHub:"
         echo "Game Config option -> Configure Game Now."
-    fi
-
+	fi
 else
-    echo "SimHub installation may have failed or is still running."
+    echo
+    echo "SimHub installation failed or cancelled"
 fi
 
-# Cleanup SimHUB
-    cd /
-    rm -rf "$TEMP_DIR"
-fi
-
-echo ""
+echo
 
 # Cleanup Global
 rm -f /tmp/steam_games_$$
