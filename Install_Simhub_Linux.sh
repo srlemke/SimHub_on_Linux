@@ -209,6 +209,9 @@ if  [ $dotnet48_present -eq 0 ]; then
         echo "Registry verification complete. Now running dotnet48 installer, wait... (~5 min)"
         winetricks -q -f dotnet48 > /dev/null 2>&1;
         install_result=$?
+    else
+        echo "Skipping reinstallation."
+        echo "Consider reinstallation if the windows app is not starting."
     fi
 fi
 
@@ -321,11 +324,6 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
         exit 1
     fi
     
-    # Set Windows version to Windows 11
-    echo "Setting Windows version to Windows 11 for better compatibility..."
-    winetricks -q win11 > /dev/null 2>&1
-    echo "done!"
-
     # Display tips before installation
     echo ""
     echo "=========================================="
