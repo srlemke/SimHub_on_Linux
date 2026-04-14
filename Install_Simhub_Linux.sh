@@ -7,17 +7,17 @@ version=9.11.10
 echo "Checking for required tools..."
 missing_tools=0
 
-if ! which protontricks > /dev/null 2>&1; then
+if ! command -v protontricks > /dev/null 2>&1; then
     echo "WARNING: protontricks is not installed"
     missing_tools=1
 fi
 
-if ! which winetricks > /dev/null 2>&1; then
+if ! command -v winetricks > /dev/null 2>&1; then
     echo "WARNING: winetricks is not installed"
     missing_tools=1
 fi
 
-if ! which wget > /dev/null 2>&1 && ! which curl > /dev/null 2>&1; then
+if ! command -v wget > /dev/null 2>&1 && ! command -v curl > /dev/null 2>&1; then
     echo "WARNING: wget or curl is not installed (needed for downloads)"
     missing_tools=1
 fi
@@ -259,9 +259,9 @@ if [ "$install_simhub" = "y" ] || [ "$install_simhub" = "Y" ]; then
     cd "$TEMP_DIR"
     
     # Download SimHub
-    if which wget > /dev/null 2>&1; then
+    if command -v wget > /dev/null 2>&1; then
         wget -q "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
-    elif which curl > /dev/null 2>&1; then
+    elif command -v curl > /dev/null 2>&1; then
         curl -sL -o "SimHub."$version".zip" "https://github.com/SHWotever/SimHub/releases/download/"$version"/SimHub."$version".zip"
 	fi
 else
@@ -281,7 +281,7 @@ fi
     echo "Download completed. Extracting..."
     
     # Extract the zip file
-    if which unzip > /dev/null 2>&1; then
+    if command -v unzip > /dev/null 2>&1; then
         unzip -q "SimHub."$version".zip"
     else
         echo "Error: unzip not found!"
