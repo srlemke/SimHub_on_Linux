@@ -204,7 +204,7 @@ install_dotnet() {
 
 if dotnet_installed; then
     echo "Microsoft .NET Framework 4.8 appears to already be installed."
-    echo "A reinstall maybe a good idea if the windows app, like SimHUB stopped working."
+    echo "A reinstall maybe a good idea if the windows app is not working properly."
     echo
     printf "Do you want to reinstall dotnet48 (y/N): " answer
     read -r answer
@@ -213,8 +213,7 @@ if dotnet_installed; then
         install_dotnet
     else
         echo "Skipping reinstallation."
-        echo "Consider reinstallation if the windows app is not starting."
-    fi
+	fi
 fi
 
 if ! dotnet_installed; then
