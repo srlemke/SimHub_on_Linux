@@ -330,6 +330,9 @@ fi
 if [ $? -eq 0 ]; then
     echo "SimHub installation completed successfully!"
     echo "You can update it to the latest version normally via the SimHUB UI"
+	echo
+	echo "To run it later with automatic game detection run the other script called runsimhub2.sh"
+	echo "You can add the runsimhub2.sh as a menu launcher"
 	# Cleanup SimHUB Downloaded files
 	rm -rf "$TEMP_DIR"
 
@@ -339,7 +342,8 @@ if [ $? -eq 0 ]; then
     else
         echo "You may need to configure SimHub for this game."
         echo "In most cases this can be done directly via SimHub:"
-        echo "Game Config option -> Configure Game Now."
+        echo
+		echo "Game Config option -> Configure Game Now."
 	fi
 else
     echo
