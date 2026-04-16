@@ -350,6 +350,88 @@ else
     echo "SimHub installation failed or cancelled"
 fi
 
+###########################################
+# FUNCTION: CREWCHIEF INSTALLER
+###########################################
+install_crewchief() {
+    printf "Install CrewChief for $selected_name? (y/n): y"
+    read -r install_cc
+    echo
+
+    # Default to yes if empty
+    if [ -z "$install_cc" ]; then
+        install_cc="y"
+    fi
+
+    if [ "$install_cc" = "y" ] || [ "$install_cc" = "Y" ]; then
+        echo "Downloading CrewChief..."
+
+        TEMP_DIR="/tmp/crewchief_install_$$"
+        mkdir -p "$TEMP_DIR"
+        cd "$TEMP_DIR"
+
+        # Download CrewChief ZIP
+        if which wget > /dev/null 2>&1; then
+            wget -q "http://thecrewchief.org/downloads/CrewChiefV4.zip"
+        else
+            curl -sL -o "CrewChiefV4.zip" "http://thecrewchief.org/downloads/CrewChiefV4.zip"
+        fi
+
+        if [ ! -f "CrewChiefV4.zip" ]; then
+            echo "Error: Failed to download CrewChief!"
+            cd /
+            rm -rf "$TEMP_DIR"
+            return
+        fi
+
+        echo "Extracting CrewChief..."
+        unzip -q "CrewChiefV4.zip"
+
+        # Find the EXE inside the extracted folder
+        CC_EXE=$(find "$TEMP_DIR" -name "CrewChiefV4.exe" -type f)
+
+        if [ -z "$CC_EXE" ]; then
+            echo "Error: CrewChiefV4.exe not found in extracted files!"
+            cd /
+            rm -rf "$TEMP_DIR"
+            return
+        fi
+
+        echo "Installing CrewChief..."
+        echo ""
+        echo "Possibly there will be a rundll32.exe error, you can click No to ignore it."
+        echo "Make sure to press the update CrewChief Option"
+        echo "Do not run it after the install finishes, as it locks the proron prefix"
+
+        if pgrep -f "$selected_id" > /dev/null 2>&1; then
+            echo "You did run CrewChief after install didnt you?"
+            echo "Close it as it locks the Proton profile and your game wont be able to start."
+        fi
+
+        #Running the installer:
+        #protontricks-launch --appid "$selected_id" "$CC_EXE" > /dev/null 2>&1;
+        protontricks-launch --appid "$selected_id" "$CC_EXE"
+
+
+        if [ ! -d "$WINEPREFIX/drive_c/Program Files (x86)/Britton_IT_Ltd/CrewChiefV4" ]; then
+            echo "CrewChief is not fully installed. You must click YES on the update prompt."
+            echo "Run the 'installer.sh' crewchief' again and make sure to run the updater."
+            echo ""
+            echo "If the updater window not appers click on Force Update Check on CrewChief UI"
+            echo "It may then crash, but then if you run the installer again the updater windows appears."
+
+        else
+            echo "CrewChief installation complete."
+        fi
+
+        cd /
+        rm -rf "$TEMP_DIR"
+    fi
+}
+
+#Call the function
+install_crewchief
+
 echo
 
 # Cleanup Global
