@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Steam directory
+STEAM_DIR="$HOME/.steam/steam"
+
 # Check if SimHub is already running
 if pgrep -f "SimHubWPF.exe" >/dev/null; then
     echo ""
@@ -24,7 +27,7 @@ if [[ -z "$game" ]]; then
 fi
 
 # Try to read the game name from Steam's appmanifest file
-APP_MANIFEST="$HOME/.steam/steam/steamapps/appmanifest_${game}.acf"
+APP_MANIFEST="$STEAM_DIR/steamapps/appmanifest_${game}.acf"
 
 if [[ -f "$APP_MANIFEST" ]]; then
     game_name=$(grep -m1 '"name"' "$APP_MANIFEST" | sed 's/.*"name"[[:space:]]*"\(.*\)".*/\1/')
@@ -36,7 +39,7 @@ echo "Detected game: $game ($game_name)"
 echo ""
 
 # Check if SimHub install exists
-SIMHUB_EXE="$HOME/.steam/steam/steamapps/compatdata/$game/pfx/drive_c/Program Files (x86)/SimHub/SimHubWPF.exe"
+SIMHUB_EXE="$STEAM_DIR/steamapps/compatdata/$game/pfx/drive_c/Program Files (x86)/SimHub/SimHubWPF.exe"
 
 if [[ ! -f "$SIMHUB_EXE" ]]; then
     echo "SimHub is not installed for this game."
@@ -55,7 +58,7 @@ if [[ "$game" = "2399420" ]]; then
     echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Proton..."
 
     # Auto-detect LMU Proton build
-    CUSTOM_WINE_DIR=$(find "$HOME/.steam/steam/compatibilitytools.d" \
+    CUSTOM_WINE_DIR=$(find "$STEAM_DIR/compatibilitytools.d" \
         -maxdepth 1 -type d -iname "GE-Proton*LMU*" | head -1)
 
     if [[ -z "$CUSTOM_WINE_DIR" ]]; then
@@ -69,7 +72,7 @@ if [[ "$game" = "2399420" ]]; then
     fi
 
     CUSTOM_WINE="$CUSTOM_WINE_DIR/files/bin/wine"
-    WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$game/pfx"
+    WINEPREFIX="$STEAM_DIR/steamapps/compatdata/$game/pfx"
     SIMHUB_EXE="$WINEPREFIX/drive_c/Program Files (x86)/SimHub/SimHubWPF.exe"
 
     if [[ ! -x "$CUSTOM_WINE" ]]; then
@@ -79,7 +82,7 @@ if [[ "$game" = "2399420" ]]; then
         exit 1
     fi
 
-    LMU_PLUGIN_DIR="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/Plugins"
+    LMU_PLUGIN_DIR="$STEAM_DIR/steamapps/common/Le Mans Ultimate/Plugins"
     mkdir -p "$LMU_PLUGIN_DIR"
 
     LMU_PLUGIN1="$LMU_PLUGIN_DIR/rFactor2SharedMemoryMapPlugin64.dll"
@@ -87,7 +90,7 @@ if [[ "$game" = "2399420" ]]; then
 
     LMU_PLUGIN2="$LMU_PLUGIN_DIR/LMU_SharedMemoryMapPlugin64.dll"
 
-    LMU_JSON="$HOME/.steam/steam/steamapps/common/Le Mans Ultimate/UserData/player/CustomPluginVariables.JSON"
+    LMU_JSON="$STEAM_DIR/steamapps/common/Le Mans Ultimate/UserData/player/CustomPluginVariables.JSON"
 
     ###############################################
     # Determine if LMU needs plugin or JSON fixes #
