@@ -121,8 +121,8 @@ PROTON_DIR="$HOME/.steam/steam/$PROTON_VERSION"
 PROTON_WINE="$PROTON_DIR/files/bin/wine"
 
 # Since we use winetricks:
-export WINEPREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
-export STEAM_COMPAT_DATA_PATH="$HOME/.steam/steam/steamapps/compatdata/$selected_id"
+export WINEPREFIX="$STEAM_DIR/compatdata/$selected_id/pfx"
+export STEAM_COMPAT_DATA_PATH="$STEAM_DIR/compatdata/$selected_id"
 
 #Sometimes the used proton variable is empty, lets make sure to populate it with in use Proton:
 export PROTON_VERSION=$(basename "$PROTON_DIR")
