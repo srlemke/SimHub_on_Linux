@@ -33,13 +33,13 @@ if [ $missing_tools -eq 1 ]; then
 fi
 
 # Steam directory
-STEAM_DIR="$HOME/.steam/steam/steamapps"
+STEAM_DIR="$HOME/.steam/steam"
 
 # Parse manifest files and extract game info
 echo "Scanning for installed games..."
 index=0
 
-for manifest in "$STEAM_DIR"/appmanifest_*.acf; do
+for manifest in "$STEAM_DIR"/steamapps/appmanifest_*.acf; do
     if [ -f "$manifest" ]; then
         # Extract app ID from filename (appmanifest_XXXXX.acf)
         app_id=$(basename "$manifest" | sed 's/appmanifest_//;s/.acf//')
@@ -104,7 +104,7 @@ echo "Name: $selected_name"
 echo
 
 # Extract the path for the Proton Version used by the selected game:
-PROTON_VERSION=$(cat "$STEAM_DIR/compatdata/$selected_id/config_info" \
+PROTON_VERSION=$(cat "$STEAM_DIR/steamapps/compatdata/$selected_id/config_info" \
 	|grep pfx |cut -d/ -f7- |sed 's|/files/share/default_pfx/.*||' )
 # Extracted path looks like:
 # /compatibilitytools.d/GE-Proton10-34-LMU-hid_fixes
@@ -117,12 +117,12 @@ if [ -z "$PROTON_VERSION" ]; then
 fi
 
 # Set the PROTON path variables to what the selected game uses:
-PROTON_DIR="$HOME/.steam/steam/$PROTON_VERSION"
+PROTON_DIR="$STEAM_DIR/$PROTON_VERSION"
 PROTON_WINE="$PROTON_DIR/files/bin/wine"
 
 # Since we use winetricks:
-export WINEPREFIX="$STEAM_DIR/compatdata/$selected_id/pfx"
-export STEAM_COMPAT_DATA_PATH="$STEAM_DIR/compatdata/$selected_id"
+export WINEPREFIX="$STEAM_DIR/steamapps/compatdata/$selected_id/pfx"
+export STEAM_COMPAT_DATA_PATH="$STEAM_DIR/steamapps/compatdata/$selected_id"
 
 #Sometimes the used proton variable is empty, lets make sure to populate it with in use Proton:
 export PROTON_VERSION=$(basename "$PROTON_DIR")
@@ -157,7 +157,7 @@ echo
 
 # Check if game has been run at least once (Proton prefix exists)
 echo "Checking if game has been run before:"
-PROTON_PREFIX="$STEAM_DIR/compatdata/$selected_id/pfx"
+PROTON_PREFIX="$STEAM_DIR/steamapps/compatdata/$selected_id/pfx"
 
 if [ ! -d "$PROTON_PREFIX" ]; then
     echo
