@@ -104,7 +104,7 @@ echo "Name: $selected_name"
 echo
 
 # Extract the path for the Proton Version used by the selected game:
-PROTON_VERSION=$(cat "$HOME/.steam/steam/steamapps/compatdata/$selected_id/config_info" \
+PROTON_VERSION=$(cat "$STEAM_DIR/compatdata/$selected_id/config_info" \
 	|grep pfx |cut -d/ -f7- |sed 's|/files/share/default_pfx/.*||' )
 # Extracted path looks like:
 # /compatibilitytools.d/GE-Proton10-34-LMU-hid_fixes
@@ -157,7 +157,7 @@ echo
 
 # Check if game has been run at least once (Proton prefix exists)
 echo "Checking if game has been run before:"
-PROTON_PREFIX="$HOME/.steam/steam/steamapps/compatdata/$selected_id/pfx"
+PROTON_PREFIX="$STEAM_DIR/compatdata/$selected_id/pfx"
 
 if [ ! -d "$PROTON_PREFIX" ]; then
     echo
