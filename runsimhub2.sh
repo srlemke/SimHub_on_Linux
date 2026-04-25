@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Steam directory
-STEAM_DIR="$HOME/.steam/steam"
-
 # Check if SimHub is already running
 if pgrep -f "SimHubWPF.exe" >/dev/null; then
     echo ""
@@ -25,6 +22,64 @@ if [[ -z "$game" ]]; then
     read -p "Press ENTER to exit..."
     exit 1
 fi
+
+# Find the Steam library root that contains appmanifest_<appid>.acf
+find_steam_library() {
+    local appid="$1"
+
+    local configs=(
+        "$HOME/.local/share/Steam/config/libraryfolders.vdf"
+        "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam/config/libraryfolders.vdf"
+        "$HOME/.steam/steam/config/libraryfolders.vdf"
+        "$HOME/.steam/root/config/libraryfolders.vdf"
+    )
+
+    local config
+    for config in "${configs[@]}"; do
+        [[ -f "$config" ]] || continue
+
+        while IFS= read -r lib_path; do
+            [[ -z "$lib_path" ]] && continue
+            if [[ -f "$lib_path/steamapps/appmanifest_${appid}.acf" ]]; then
+                echo "$lib_path"
+                return 0
+            fi
+        done < <(
+            awk -F'"' '
+                /^[[:space:]]*"[0-9]+"[[:space:]]*{/ { in_block=1; next }
+                in_block && /^[[:space:]]*"path"[[:space:]]*"/ {
+                    print $4
+                    in_block=0
+                }
+            ' "$config" | sed 's#\\\\#/#g'
+        )
+    done
+
+    # Fallback: search common mount locations
+    local manifest
+    manifest=$(find /run/media "$HOME" /mnt -name "appmanifest_${appid}.acf" -type f 2>/dev/null | head -1)
+
+    if [[ -n "$manifest" ]]; then
+        dirname "$(dirname "$manifest")"
+        return 0
+    fi
+
+    return 1
+}
+
+# Find Steam library for the detected game
+STEAM_DIR=$(find_steam_library "$game")
+if [[ -z "$STEAM_DIR" ]]; then
+    echo ""
+    echo "Error: Could not find Steam library for AppID $game"
+    echo "Make sure the game is installed and Steam config is accessible."
+    echo ""
+    read -p "Press ENTER to exit..."
+    exit 1
+fi
+
+echo "Found Steam library: $STEAM_DIR"
+echo ""
 
 # Try to read the game name from Steam's appmanifest file
 APP_MANIFEST="$STEAM_DIR/steamapps/appmanifest_${game}.acf"
@@ -58,8 +113,19 @@ if [[ "$game" = "2399420" ]]; then
     echo "Le Mans Ultimate detected, launching SimHub using LMU-specific Proton..."
 
     # Auto-detect LMU Proton build
-    CUSTOM_WINE_DIR=$(find "$STEAM_DIR/compatibilitytools.d" \
-        -maxdepth 1 -type d -iname "GE-Proton*LMU*" | head -1)
+    CUSTOM_WINE_DIR=""
+
+    for base in \
+        "$HOME/.steam/steam/compatibilitytools.d" \
+        "$HOME/.steam/root/compatibilitytools.d" \
+        "$HOME/.local/share/Steam/compatibilitytools.d" \
+        "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam/compatibilitytools.d"
+    do
+        if [[ -d "$base" ]]; then
+            CUSTOM_WINE_DIR=$(find "$base" -maxdepth 1 -type d -iname "GE-Proton*LMU*" | head -1)
+            [[ -n "$CUSTOM_WINE_DIR" ]] && break
+        fi
+    done
 
     if [[ -z "$CUSTOM_WINE_DIR" ]]; then
         echo "Error: No LMU-specific GE-Proton build found in compatibilitytools.d"
@@ -97,13 +163,8 @@ if [[ "$game" = "2399420" ]]; then
     ###############################################
     NEED_FIX=0
 
-    if [[ ! -f "$LMU_PLUGIN1" ]]; then
-        NEED_FIX=1
-    fi
-
-    if [[ ! -f "$LMU_PLUGIN2" ]]; then
-        NEED_FIX=1
-    fi
+    [[ ! -f "$LMU_PLUGIN1" ]] && NEED_FIX=1
+    [[ ! -f "$LMU_PLUGIN2" ]] && NEED_FIX=1
 
     if [[ ! -f "$LMU_JSON" ]]; then
         NEED_FIX=1
@@ -130,7 +191,7 @@ if [[ "$game" = "2399420" ]]; then
             fi
 
             echo ""
-            echo "⚠  You have missing telemetry plugins."
+            echo "⚠ You have missing telemetry plugins."
             echo "LMU must be closed before we can add the missing plugins."
             echo "This is only needed on the first run."
             echo ""
@@ -302,4 +363,3 @@ fi
 
 echo ""
 echo "Done!"
-
