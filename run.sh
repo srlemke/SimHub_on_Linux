@@ -15,7 +15,8 @@ populate_and_print_variables() {
 ###############################################
 # Detect running game AppId
 ###############################################
-game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -v grep \
+#When running SteamVR, ignore SteamVR so the app is properly found
+game=$(ps -eo args | grep -F "SteamLaunch AppId=" | grep -vE 'grep|SteamVR' \
     | sed -n 's/.*AppId=\([0-9]\+\).*/\1/p' | head -1)
 
 if [[ -z "$game" ]]; then
