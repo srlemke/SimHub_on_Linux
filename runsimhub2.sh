@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #Run the populate script:
+cd "$(dirname "$0")"
 source ./shared_functions.sh
 
 #List installed games:
