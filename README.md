@@ -15,16 +15,13 @@
 ## Features:
 
 - `Scans installed Steam games`
-- `Checks if game has been run before to confirm a populated game prefix exists`
-- `Installs dotnet48 if not already present`
-- `Downloads and installs latest SimHub`
-- `Downloads and installs latest CrewChief`
+- `Can Install dotnet48`
+- `Can Install SimHub and CrewChief`
 - `Gives instructions on what SimHub components to install`
-- `Detects installed game used proton version, even LMU custom Proton-GE`
-- `Can install LMU custom Proton (Required for LMU)`
+- `Detects Proton version per game, even if a custom Proton (eg. LMU)`
+- `Can install LMU custom Proton (Required for LMU) or Proton GE (Recommended)`
 - `Automatically adds plugins and configures LMU`
 - `Automatically adds dash.exe for RaceRomm SealHUD usage`
-- `Offer installation of Proton GE, which has much better .NET compatibility`
 
 ## How to Install && run. Copy Pasta should work:
 ```bash
