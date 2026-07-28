@@ -90,7 +90,7 @@ install_ge_proton_lmu() {
     game_id="$1"
     PROTON_NAME="GE-Proton10-34-LMU-hid_fixes"
     TARGET_DIR="$HOME/.local/share/Steam/compatibilitytools.d/${PROTON_NAME}"
-    ARCHIVE_URL="https://github.com/JacKeTUs/proton-ge-custom/releases/download/GE-Proton10-34-LMU-hid_fixes/GE-Proton10-34-LMU-hid_fixes.tar.gz"
+    ARCHIVE_URL="https://github.com/JacKeTUs/proton-ge-custom/releases/download/GE-Proton10-34-LMU-hid_fixes-vr-bcrypt/GE-Proton10-34-LMU-hid_fixes-vr-bcrypt.tar.gz"
     ARCHIVE_NAME="${PROTON_NAME}.tar.gz"
 
     if [ -d "$TARGET_DIR" ]; then
