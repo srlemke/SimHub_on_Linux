@@ -1,5 +1,5 @@
 
-🧠 I suggest: [linux-simracing-utils](https://github.com/srounce/linux-simracing-utils) - This copies the game prefix memory in Linux user space, so only 1 SimHub install is needed. I use it and help over there if needed.
+🧠 I suggest: [linux-simracing-utils](https://github.com/srounce/linux-simracing-utils) - This copies the game prefix memory in Linux user space, so only 1 SimHub install is needed. I use it and help over there if needed.  
 🚀 A shell script to install and run [SimHub](https://www.simhubdash.com/), [CrewChief](https://thecrewchief.org/) and its dotnet48 dependency.  
 💡 Offers to install [Proton-GE](https://github.com/GloriousEggroll/proton-ge-custom/releases/tag/GE-Proton10-34) and [Custom LMU Proton‑GE](https://github.com/JacKeTUs/proton-ge-custom/releases) if not present.  
 📦 I recommend [Proton-GE](https://github.com/GloriousEggroll/proton-ge-custom/releases/tag/GE-Proton10-34) for it's .NET compatibility.  
