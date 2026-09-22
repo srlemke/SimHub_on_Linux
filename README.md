@@ -1,5 +1,5 @@
 
-🧠 I suggest and use the bellow:
+🧠 I suggest and use the bellow:  
 [linux-simracing-utils](https://github.com/srounce/linux-simracing-utils) - This copies the game prefix memory in Linux user space, so only 1 SimHub install is needed. I use it and help over there if needed.  
 
 🚀 A shell script to install and run [SimHub](https://www.simhubdash.com/), [CrewChief](https://thecrewchief.org/) and its dotnet48 dependency.  
