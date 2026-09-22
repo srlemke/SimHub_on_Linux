@@ -314,10 +314,7 @@ test_proton() {
                             "GE-Proton10" ;;
                             
         2399420)  match_proton "LMU" \
-                            "GE-Proton10-34-LMU-hid_fixes" ;;
-
-        2399420)  match_proton "LMU" \
-                            "GE-Proton11-7-LMU-1.4-v5" ;;
+                            "GE-Proton10-34-LMU-hid_fixes, GE-Proton11-7-LMU-1.4-v5" ;;
                             
         3058630)  match_proton "AC EVO" \
                             "GE-Proton10" ;;
