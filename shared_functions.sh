@@ -88,7 +88,7 @@ install_ge_proton() {
 #Custom proton for LMU
 install_ge_proton_lmu() {
     game_id="$1"
-    PROTON_NAME="GE-Proton10-34-LMU-hid_fixes"
+    PROTON_NAME="GE-Proton11-7-LMU-1.4-v5"
     TARGET_DIR="$HOME/.local/share/Steam/compatibilitytools.d/${PROTON_NAME}"
     ARCHIVE_URL="https://github.com/DerekMurray/proton-ge-custom/releases/download/GE-Proton11-7-LMU-1.4-v5/GE-Proton11-7-LMU-1.4-v5.tar.gz"
     ARCHIVE_NAME="${PROTON_NAME}.tar.gz"
@@ -315,6 +315,9 @@ test_proton() {
                             
         2399420)  match_proton "LMU" \
                             "GE-Proton10-34-LMU-hid_fixes" ;;
+
+        2399420)  match_proton "LMU" \
+                            "GE-Proton11-7-LMU-1.4-v5" ;;
                             
         3058630)  match_proton "AC EVO" \
                             "GE-Proton10" ;;
